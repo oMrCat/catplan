@@ -43,7 +43,7 @@
 ## 项目结构
 
 ```
-app/src/main/java/io/github/catplan/app/
+app/src/main/java/io/github/omrcat/catplan/
 ├── CatPlanApplication.kt     # 通知渠道 + 周期提醒调度
 ├── MainActivity.kt           # 入口，计算窗口尺寸并选择导航形态
 ├── ui/

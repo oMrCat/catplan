@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "io.github.catplan.app"
+    namespace = "io.github.omrcat.catplan"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "io.github.catplan.app"
+        applicationId = "io.github.omrcat.catplan"
         minSdk = 26
         targetSdk = 35
         versionCode = 6
