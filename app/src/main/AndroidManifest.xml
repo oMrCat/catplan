@@ -5,11 +5,13 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- 唯一的联网用途：用户在「设置」里主动触发的 WebDAV 同步；其余数据全部保存在本机 -->
+    <!-- usesCleartextTraffic：局域网 NAS 的 WebDAV 常为 HTTP，允许明文；凭据保存在本机，请优先使用 HTTPS -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".CatPlanApplication"
         android:allowBackup="true"
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
