@@ -23,6 +23,20 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
+        continue-on-error: true
+
+      - name: Upload test reports (取证)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/test-results/
+            app/build/reports/tests/
+
+      - name: Fail if previous steps failed
+        if: ${{ failure() }}
+        run: exit 1
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
