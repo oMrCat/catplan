@@ -1,5 +1,7 @@
 # 猫计划 CatPlan 🐱
 
+[![CI](https://github.com/oMrCat/catplan/actions/workflows/ci.yml/badge.svg)](https://github.com/oMrCat/catplan/actions/workflows/ci.yml)
+
 > 多猫家庭的一站式猫咪健康管家 —— 让每一次疫苗、驱虫、体检都不错过。
 
 **开源 · 免费 · 无广告 · 无追踪**。所有数据只存在你的手机里（本地优先），应用不申请网络权限，不上传任何数据，也没有任何变现设计 —— 这是一份纯粹的猫奴公益项目。

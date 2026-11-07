@@ -30,6 +30,9 @@ interface WeightDao {
     @Query("SELECT * FROM weight_entries WHERE catId = :catId ORDER BY dateEpochDay")
     fun observeForCat(catId: Long): Flow<List<WeightEntryEntity>>
 
+    @Query("SELECT * FROM weight_entries ORDER BY dateEpochDay")
+    fun observeAll(): Flow<List<WeightEntryEntity>>
+
     @Insert
     suspend fun insert(entry: WeightEntryEntity): Long
 
@@ -48,6 +51,9 @@ interface CareTaskDao {
 
     @Insert
     suspend fun insertAll(tasks: List<CareTaskEntity>)
+
+    @Insert
+    suspend fun insert(task: CareTaskEntity): Long
 
     /** 完成任务；周期任务由 UI 层按 intervalDays 生成下一轮再写入 */
     @Query("UPDATE care_tasks SET status = 'done', completedAtEpochMs = :completedAtEpochMs WHERE id = :taskId")
