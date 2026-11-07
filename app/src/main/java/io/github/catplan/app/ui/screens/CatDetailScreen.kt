@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -41,7 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -54,6 +60,7 @@ import io.github.catplan.app.data.PhotoStore
 import io.github.catplan.app.data.local.CatEntity
 import io.github.catplan.app.data.local.PhotoEntity
 import io.github.catplan.app.domain.CatAge
+import io.github.catplan.app.domain.WeightChart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -139,6 +146,42 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
                     } ?: "还没有记录",
                     style = MaterialTheme.typography.titleLarge,
                 )
+                if (weights.size >= 2) {
+                    val minGrams = weights.minOf { it.weightGrams }
+                    val maxGrams = weights.maxOf { it.weightGrams }
+                    Text(
+                        "最高 %.2f kg · 最低 %.2f kg".format(maxGrams / 1000.0, minGrams / 1000.0),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val lineColor = MaterialTheme.colorScheme.primary
+                    Canvas(Modifier.fillMaxWidth().height(120.dp)) {
+                        val data = WeightChart.mapPoints(
+                            weights.map { it.dateEpochDay to it.weightGrams },
+                            size.width,
+                            size.height,
+                        )
+                        if (data.points.size >= 2) {
+                            val path = Path().apply {
+                                data.points.forEachIndexed { index, p ->
+                                    if (index == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
+                                }
+                            }
+                            drawPath(
+                                path,
+                                color = lineColor,
+                                style = Stroke(width = 6f, cap = StrokeCap.Round),
+                            )
+                        }
+                        data.points.forEach { p ->
+                            drawCircle(
+                                color = lineColor,
+                                radius = 8f,
+                                center = Offset(p.x, p.y),
+                            )
+                        }
+                    }
+                }
                 weights.take(5).forEach { w ->
                     Row(
                         Modifier.fillMaxWidth(),
