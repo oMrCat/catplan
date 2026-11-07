@@ -104,8 +104,8 @@ object BackupCodec {
             cats += CatEntity(
                 id = c.getLong("id"),
                 name = c.getString("name"),
-                breed = c.optString("breed").takeIf { it.isNotEmpty() },
-                gender = c.optString("gender").takeIf { it.isNotEmpty() },
+                breed = if (c.isNull("breed")) null else c.optString("breed"),
+                gender = if (c.isNull("gender")) null else c.optString("gender"),
                 birthdayEpochDay = c.getLong("birthdayEpochDay"),
                 neutered = c.optBoolean("neutered", false),
                 avatarEmoji = c.optString("avatarEmoji", "🐱"),
@@ -117,7 +117,7 @@ object BackupCodec {
                 catId = w.getLong("catId"),
                 dateEpochDay = w.getLong("dateEpochDay"),
                 weightGrams = w.getInt("weightGrams"),
-                note = w.optString("note").takeIf { it.isNotEmpty() },
+                note = if (w.isNull("note")) null else w.optString("note"),
             )
         }
         root.optJSONArray("careTasks")?.forEach { t ->
@@ -136,7 +136,7 @@ object BackupCodec {
                 catId = if (e.isNull("catId")) null else e.getLong("catId"),
                 amountCents = e.getLong("amountCents"),
                 category = e.getString("category"),
-                note = e.optString("note").takeIf { it.isNotEmpty() },
+                note = if (e.isNull("note")) null else e.optString("note"),
                 dateEpochDay = e.getLong("dateEpochDay"),
             )
         }
