@@ -31,12 +31,12 @@ class BackupCodecTest {
             CareTaskEntity(catId = 1, type = CareTaskEntity.TYPE_FVRCP, title = "猫三联 · 年度加强", dueDateEpochDay = 20800, intervalDays = 365),
         ),
         expenses = listOf(
-            ExpenseEntity(catId = null, amountCents = 12850, category = "主食", note = null, dateEpochDay = 20758),
-            ExpenseEntity(catId = 2, amountCents = 4500, category = "医疗", note = "疫苗", dateEpochDay = 20758),
+            ExpenseEntity(catId = null, amountCents = 12850, category = "主食", note = null, dateEpochDay = 20758, createdAtEpochMs = 1000),
+            ExpenseEntity(catId = 2, amountCents = 4500, category = "医疗", note = "疫苗", dateEpochDay = 20758, createdAtEpochMs = 1100),
         ),
         dailies = listOf(
-            DailyEntity(type = DailyEntity.TYPE_FEED, catId = 1, dateEpochDay = 20758),
-            DailyEntity(type = DailyEntity.TYPE_LITTER, catId = null, dateEpochDay = 20758),
+            DailyEntity(type = DailyEntity.TYPE_FEED, catId = 1, dateEpochDay = 20758, createdAtEpochMs = 1000),
+            DailyEntity(type = DailyEntity.TYPE_LITTER, catId = null, dateEpochDay = 20758, createdAtEpochMs = 1100),
         ),
     )
 

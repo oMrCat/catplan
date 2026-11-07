@@ -87,7 +87,8 @@ object BackupCodec {
                             .put("amountCents", e.amountCents)
                             .put("category", e.category)
                             .put("note", e.note ?: JSONObject.NULL)
-                            .put("dateEpochDay", e.dateEpochDay),
+                            .put("dateEpochDay", e.dateEpochDay)
+                            .put("createdAtEpochMs", e.createdAtEpochMs),
                     )
                 }
             },
@@ -100,7 +101,8 @@ object BackupCodec {
                         JSONObject()
                             .put("type", dly.type)
                             .put("catId", dly.catId ?: JSONObject.NULL)
-                            .put("dateEpochDay", dly.dateEpochDay),
+                            .put("dateEpochDay", dly.dateEpochDay)
+                            .put("createdAtEpochMs", dly.createdAtEpochMs),
                     )
                 }
             },
@@ -154,6 +156,7 @@ object BackupCodec {
                 category = e.getString("category"),
                 note = if (e.isNull("note")) null else e.optString("note"),
                 dateEpochDay = e.getLong("dateEpochDay"),
+                createdAtEpochMs = e.optLong("createdAtEpochMs", System.currentTimeMillis()),
             )
         }
         root.optJSONArray("dailies")?.forEach { d ->
@@ -161,6 +164,7 @@ object BackupCodec {
                 type = d.getString("type"),
                 catId = if (d.isNull("catId")) null else d.getLong("catId"),
                 dateEpochDay = d.getLong("dateEpochDay"),
+                createdAtEpochMs = d.optLong("createdAtEpochMs", System.currentTimeMillis()),
             )
         }
         return BackupData(cats, weights, tasks, expenses, dailies)
