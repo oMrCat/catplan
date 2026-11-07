@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">猫计划</string>
+
+    <string name="tab_today">今日</string>
+    <string name="tab_calendar">日历</string>
+    <string name="tab_cats">档案</string>
+
+    <string name="channel_care_name">护理提醒</string>
+    <string name="channel_care_desc">疫苗、驱虫、体检的到期提醒</string>
+    <string name="reminder_title">猫计划 · %1$d 项护理待办</string>
+</resources>

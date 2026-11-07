@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 临时猫头图标（占位）：白色猫脸 + 橙色眼睛，后续可换成正式品牌图标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 耳朵 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M38,40 L33,22 L50,33 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M70,40 L75,22 L58,33 Z" />
+    <!-- 脸 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M34,52 a20,20 0 1 0 40,0 a20,20 0 1 0 -40,0 Z" />
+    <!-- 眼睛 -->
+    <path
+        android:fillColor="#FFE05F16"
+        android:pathData="M47,50 m-2.5,0 a2.5,2.5 0 1 1 5,0 a2.5,2.5 0 1 1 -5,0" />
+    <path
+        android:fillColor="#FFE05F16"
+        android:pathData="M61,50 m-2.5,0 a2.5,2.5 0 1 1 5,0 a2.5,2.5 0 1 1 -5,0" />
+</vector>

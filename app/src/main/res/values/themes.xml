@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 全 Compose 应用：Manifest 里只需要一个无 ActionBar 的基础主题，配色在 Compose 主题里管理 -->
+    <style name="Theme.CatPlan" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
