@@ -16,9 +16,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # 安装 Android SDK 命令行工具并接受许可，AGP 会按需补齐 platform/build-tools
-      - uses: android-actions/setup-android@v3
-
+      # ubuntu runner 自带 Android SDK 且许可已接受，AGP 按需下载缺失的 platform/build-tools
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build & Unit Test
