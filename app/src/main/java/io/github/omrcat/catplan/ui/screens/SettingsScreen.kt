@@ -22,10 +22,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.omrcat.catplan.R
 import io.github.omrcat.catplan.AppViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -38,7 +40,7 @@ fun SettingsScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val versionName = remember {
-        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrDefault("?")
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
     }
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -65,11 +67,11 @@ fun SettingsScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("设置", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
 
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("备份与恢复", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_backup_section), style = MaterialTheme.typography.titleMedium)
                 Text(
                     "全部数据导出为一个 JSON 文件；恢复时按「名字 + 生日」合并猫咪，其余记录追加。" +
                         "相册照片不参与备份。",
@@ -83,17 +85,17 @@ fun SettingsScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier
                                 LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".json"
                             exportLauncher.launch(name)
                         },
-                    ) { Text("导出备份") }
+                    ) { Text(stringResource(R.string.settings_export)) }
                     OutlinedButton(
                         onClick = { importLauncher.launch(arrayOf("*/*")) },
-                    ) { Text("导入恢复") }
+                    ) { Text(stringResource(R.string.settings_import)) }
                 }
             }
         }
 
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("WebDAV 同步（实验性）", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_webdav_section), style = MaterialTheme.typography.titleMedium)
                 Text(
                     "填 WebDAV 的完整文件地址（坚果云 / Nextcloud / 群晖都支持），家人用同一个地址即可共享猫咪数据。" +
                         "账号密码只保存在本机，上传下载仅在点击时发生。",
@@ -103,35 +105,35 @@ fun SettingsScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier
                 OutlinedTextField(
                     value = vm.webDavUrl,
                     onValueChange = { vm.webDavUrl = it },
-                    label = { Text("文件 URL（https://…/catplan-backup.json）") },
+                    label = { Text(stringResource(R.string.settings_webdav_url)) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = vm.webDavUsername,
                     onValueChange = { vm.webDavUsername = it },
-                    label = { Text("账号") },
+                    label = { Text(stringResource(R.string.settings_webdav_account)) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = vm.webDavPassword,
                     onValueChange = { vm.webDavPassword = it },
-                    label = { Text("密码 / 应用密码") },
+                    label = { Text(stringResource(R.string.settings_webdav_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { vm.uploadToWebDav(::toast) }) { Text("上传备份") }
-                    OutlinedButton(onClick = { vm.restoreFromWebDav(::toast) }) { Text("下载恢复") }
+                    Button(onClick = { vm.uploadToWebDav(::toast) }) { Text(stringResource(R.string.settings_upload)) }
+                    OutlinedButton(onClick = { vm.restoreFromWebDav(::toast) }) { Text(stringResource(R.string.settings_download)) }
                 }
             }
         }
 
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("关于", style = MaterialTheme.typography.titleMedium)
-                Text("猫计划 CatPlan v$versionName · Apache-2.0", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_about), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_about_line, versionName), style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    "开源地址：github.com/oMrCat/catplan",
+                    stringResource(R.string.settings_repo),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.clickable { uriHandler.openUri("https://github.com/oMrCat/catplan") },

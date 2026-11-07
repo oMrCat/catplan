@@ -231,6 +231,57 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // —— 猫咪编辑 / 删除 ——
+
+    /** 编辑猫咪；生日变更时按新生日重建待办计划（已完成记录保留） */
+    fun updateCat(cat: CatEntity, birthdayChanged: Boolean, onDone: () -> Unit) {
+        viewModelScope.launch {
+            catDao.update(cat)
+            if (birthdayChanged) {
+                regeneratePlan(cat)
+            }
+            onDone()
+        }
+    }
+
+    /** 删除猫咪：清理相册文件后删库（外键级联清掉体重/任务/花费/打卡/健康日记/照片记录） */
+    fun deleteCat(cat: CatEntity, onDone: () -> Unit) {
+        viewModelScope.launch {
+            PhotoStore.deleteForCat(getApplication(), cat.id)
+            catDao.delete(cat)
+            onDone()
+        }
+    }
+
+    private suspend fun regeneratePlan(cat: CatEntity) {
+        taskDao.deletePendingForCat(cat.id)
+        val birthday = LocalDate.ofEpochDay(cat.birthdayEpochDay)
+        val drafts = CareScheduleGenerator.generate(birthday, LocalDate.now())
+        taskDao.insertAll(
+            drafts.map { d ->
+                CareTaskEntity(
+                    catId = cat.id,
+                    type = d.type,
+                    title = d.title,
+                    dueDateEpochDay = d.dueDate.toEpochDay(),
+                    intervalDays = d.intervalDays,
+                )
+            },
+        )
+    }
+
+    // —— 打卡撤销 ——
+
+    /** 今日某类型的打卡记录（喂食含按猫/全家多条） */
+    suspend fun todayDailiesFor(type: String): List<DailyEntity> =
+        dailyDao.getForDay(type, today.toEpochDay())
+
+    fun removeDaily(daily: DailyEntity) {
+        viewModelScope.launch {
+            dailyDao.delete(daily)
+        }
+    }
+
     // —— 备份 / 恢复（JSON）——
 
     private suspend fun collectBackup(): BackupCodec.BackupData = withContext(Dispatchers.IO) {

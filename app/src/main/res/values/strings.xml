@@ -2,16 +2,202 @@
 <resources>
     <string name="app_name">猫计划</string>
 
+    <!-- 底部导航 -->
     <string name="tab_today">今日</string>
     <string name="tab_calendar">日历</string>
     <string name="tab_cats">档案</string>
     <string name="tab_ledger">账本</string>
     <string name="tab_settings">设置</string>
 
+    <!-- 通用 -->
+    <string name="common_save">保存</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_close">关闭</string>
+    <string name="common_delete">删除</string>
+    <string name="common_undo">撤销</string>
+    <string name="common_done">完成</string>
+    <string name="common_family">全家</string>
+    <string name="common_loading">加载中…</string>
+
+    <!-- 今日页 -->
+    <string name="today_greeting">早上好，铲屎官 🌤️</string>
+    <string name="today_streak_tasks">连续记录 %1$d 天 · 有 %2$d 件护理待办</string>
+    <string name="today_streak_none">连续记录 %1$d 天 · 今天没有待办，安心吸猫</string>
+    <string name="today_section_tasks">今日待办</string>
+    <string name="today_empty_hint">近 7 天没有护理安排。去「档案」添加猫咪，护理计划会自动生成 ✨</string>
+    <string name="today_due_today">今天到期</string>
+    <string name="today_due_on">%1$s · 还有 %2$d 天</string>
+    <string name="today_due_overdue">%1$s · 已逾期</string>
+    <string name="today_action_done">完成</string>
+    <string name="today_section_daily">日常打卡</string>
+    <string name="daily_weight">记体重</string>
+    <string name="daily_feed">记喂食</string>
+    <string name="daily_fed">已喂 ✓</string>
+    <string name="daily_litter">铲屎</string>
+    <string name="daily_littered">已铲 ✓</string>
+    <string name="daily_diary">拍日记</string>
+    <string name="toast_coming_soon">这个功能 v0.3 就来 🚧</string>
+    <string name="toast_litter_done">铲屎打卡完成 🧹</string>
+    <string name="toast_weight_saved">体重已记录 ✅</string>
+    <string name="toast_feed_done">喂食打卡完成 🍚</string>
+    <string name="toast_undone">已撤销 ↩️</string>
+
+    <!-- 打卡撤销 -->
+    <string name="undo_feed_title">撤销喂食打卡</string>
+    <string name="undo_litter_title">撤销铲屎打卡</string>
+    <string name="undo_loading">加载中…</string>
+    <string name="undo_empty">今天没有相关记录</string>
+    <string name="undo_family">全家</string>
+
+    <!-- 记体重对话框 -->
+    <string name="weight_title">记体重</string>
+    <string name="weight_need_cat">先去「档案」添加一只猫咪吧 🐾</string>
+    <string name="weight_label">体重 (kg)</string>
+    <string name="weight_for">给 %1$s 记体重</string>
+
+    <!-- 喂食对话框 -->
+    <string name="feed_title">记喂食</string>
+    <string name="feed_who">这顿是给谁喂的？</string>
+
+    <!-- 日历页 -->
+    <string name="calendar_title">健康日历</string>
+    <string name="calendar_period">%1$d年%2$d月 · 未来 30 天</string>
+    <string name="calendar_upcoming">即将到来</string>
+    <string name="calendar_empty">近 30 天没有安排。添加猫咪后，护理计划会按生日自动生成 ✨</string>
+    <string name="calendar_note">提醒按猫龄与免疫周期自动生成，到期前 3 天本地推送。</string>
+    <string name="day_today">今天</string>
+    <string name="day_tomorrow">明天</string>
+    <string name="date_short">%1$d月%2$d日</string>
+    <string name="date_full">%1$d年%2$d月%3$d日</string>
+    <string name="interval_once">一次性</string>
+    <string name="interval_monthly">每 1 个月</string>
+    <string name="interval_quarterly">每 3 个月</string>
+    <string name="interval_yearly">每年</string>
+    <string name="interval_days">每 %1$d 天</string>
+
+    <!-- 档案页 -->
+    <string name="cats_title">猫咪档案</string>
+    <string name="cats_empty">还没有猫咪，点下面的按钮添加吧 🐾</string>
+    <string name="cats_add">＋ 添加猫咪</string>
+    <string name="cats_local_only">数据只保存在本机，不上传任何服务器。</string>
+    <string name="cats_no_weight">暂无体重记录</string>
+    <string name="cats_info_empty">信息未填写</string>
+    <string name="toast_cat_added">已为 %1$s 生成 %2$d 项护理计划 ✨</string>
+
+    <!-- 猫咪表单 -->
+    <string name="form_add_title">添加猫咪</string>
+    <string name="form_edit_title">编辑猫咪</string>
+    <string name="form_name">名字 *</string>
+    <string name="form_year">出生年</string>
+    <string name="form_month">月</string>
+    <string name="form_day">日</string>
+    <string name="form_breed">品种（选填）</string>
+    <string name="form_boy">弟弟</string>
+    <string name="form_girl">妹妹</string>
+    <string name="form_neutered">已绝育</string>
+    <string name="form_birthday_changed">生日已修改：护理计划将按新生日重新生成（已完成记录保留）</string>
+    <string name="toast_cat_updated">资料已更新 ✅</string>
+    <string name="toast_plan_regen">护理计划已按新生日重新生成 🔄</string>
+
+    <!-- 详情页 -->
+    <string name="detail_edit">✏️ 编辑资料</string>
+    <string name="detail_delete_cat">🗑️ 删除猫咪</string>
+    <string name="detail_delete_title">删除 %1$s？</string>
+    <string name="detail_delete_text">将一并删除 TA 的体重、护理计划、花费、打卡、健康日记与照片记录，且无法恢复。</string>
+    <string name="detail_cat_missing">猫咪不存在或已被删除</string>
+    <string name="weight_section">体重记录</string>
+    <string name="weight_none">还没有记录</string>
+    <string name="weight_add">＋ 记体重</string>
+    <string name="weight_range">最高 %1$.2f kg · 最低 %2$.2f kg</string>
+    <string name="album_section">成长相册</string>
+    <string name="album_add">＋ 添加照片</string>
+    <string name="album_empty">拍下 TA 的每个瞬间吧 📷</string>
+    <string name="album_note">照片保存在应用私有目录，点击照片可删除；不参与备份导出。</string>
+    <string name="album_delete_title">删除这张照片？</string>
+    <string name="album_delete_text">删除后无法恢复。</string>
+    <string name="toast_photo_failed">照片导入失败</string>
+
+    <!-- 健康日记 -->
+    <string name="health_section">健康日记</string>
+    <string name="health_add">＋ 记录</string>
+    <string name="health_empty">记录食欲、精神与排泄情况，异常会醒目标出 🩺</string>
+    <string name="health_urgent">⚠️ 尽快就医</string>
+    <string name="health_watch">⚠️ 留意</string>
+    <string name="health_more">更早的 %1$d 条记录向下翻找 📜</string>
+    <string name="health_dialog_title">健康日记 · %1$s</string>
+    <string name="health_appetite">食欲</string>
+    <string name="health_energy">精神</string>
+    <string name="health_poop">便便</string>
+    <string name="health_urine">尿液</string>
+    <string name="health_text_note">备注（选填）</string>
+    <string name="toast_health_saved">健康日记已记录 🩺</string>
+    <string name="health_delete_title">删除这条健康日记？</string>
+    <string name="health_delete_text">删除后无法恢复。</string>
+    <string name="health_flag_appetite">食欲 %1$s</string>
+    <string name="health_flag_energy">精神 %1$s</string>
+    <string name="health_flag_poop">便便 %1$s</string>
+    <string name="health_flag_urine">尿液 %1$s</string>
+
+    <!-- 账本页 -->
+    <string name="ledger_title">账本</string>
+    <string name="ledger_month">%1$d年%2$d月</string>
+    <string name="ledger_total">本月总支出</string>
+    <string name="ledger_empty">这个月还没记账，点下面记一笔 💰</string>
+    <string name="ledger_by_cat">按猫分摊</string>
+    <string name="ledger_dash">—</string>
+    <string name="ledger_recent">最近记录</string>
+    <string name="ledger_no_records">还没有花费记录</string>
+    <string name="ledger_add">＋ 记一笔</string>
+    <string name="ledger_local_note">金额只保存在本机。</string>
+    <string name="expense_title">记一笔</string>
+    <string name="expense_who">给谁花的</string>
+    <string name="expense_category">类目</string>
+    <string name="expense_amount">金额 (元)</string>
+    <string name="expense_note">备注（选填）</string>
+    <string name="toast_expense_saved">已记账 ✅</string>
+
+    <!-- 设置页 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_backup_section">备份与恢复</string>
+    <string name="settings_backup_desc">全部数据导出为一个 JSON 文件；恢复时按「名字 + 生日」合并猫咪，其余记录追加。相册照片不参与备份。</string>
+    <string name="settings_export">导出备份</string>
+    <string name="settings_import">导入恢复</string>
+    <string name="settings_webdav_section">WebDAV 同步（实验性）</string>
+    <string name="settings_webdav_desc">填 WebDAV 的完整文件地址（坚果云 / Nextcloud / 群晖都支持），家人用同一个地址即可共享猫咪数据。账号密码只保存在本机，上传下载仅在点击时发生。</string>
+    <string name="settings_webdav_url">文件 URL（https://…/catplan-backup.json）</string>
+    <string name="settings_webdav_account">账号</string>
+    <string name="settings_webdav_password">密码 / 应用密码</string>
+    <string name="settings_upload">上传备份</string>
+    <string name="settings_download">下载恢复</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_about_line">猫计划 CatPlan v%1$s · Apache-2.0</string>
+    <string name="settings_repo">开源地址：github.com/oMrCat/catplan</string>
+    <string name="settings_privacy">数据全部保存在本机；唯一的联网行为是你主动触发的 WebDAV 同步。</string>
+    <string name="backup_need_webdav_url">请先填写 WebDAV 文件地址</string>
+    <string name="backup_write_failed">无法写入所选位置</string>
+    <string name="backup_read_failed">无法读取所选文件</string>
+    <string name="backup_export_ok">已导出 %1$d 只猫、%2$d 条体重、%3$d 项任务、%4$d 笔花费、%5$d 次打卡、%6$d 条健康日记</string>
+    <string name="backup_export_failed">导出失败：%1$s</string>
+    <string name="backup_restore_failed">恢复失败：%1$s</string>
+    <string name="backup_restore_ok">已恢复 %1$d 只新猫、%2$d 条体重、%3$d 项任务、%4$d 笔花费、%5$d 次打卡、%6$d 条健康日记</string>
+    <string name="webdav_upload_ok">已上传备份 ✅</string>
+    <string name="webdav_upload_failed">上传失败：%1$s</string>
+    <string name="webdav_restore_failed">下载/恢复失败：%1$s</string>
+    <string name="toast_backup_saved">备份已保存 ✅</string>
+
+    <!-- 通知 / 小组件 -->
     <string name="channel_care_name">护理提醒</string>
     <string name="channel_care_desc">疫苗、驱虫、体检的到期提醒</string>
     <string name="reminder_title">猫计划 · %1$d 项护理待办</string>
     <string name="reminder_birthday_title">猫计划 · 生日提醒</string>
+    <string name="reminder_birthday_today">🎂 %1$s 的生日就是今天！</string>
+    <string name="reminder_birthday_in">🎂 %1$s 的生日还有 %2$d 天</string>
     <string name="widget_description">今日待办与喂食铲屎打卡</string>
+    <string name="widget_title">🐱 猫计划 · 今日</string>
     <string name="widget_no_tasks">没有待办，安心吸猫</string>
+    <string name="widget_tasks_line">%1$d 件待办 · %2$s</string>
+    <string name="widget_fed">🍚 已喂</string>
+    <string name="widget_feed">🍚 喂食</string>
+    <string name="widget_littered">🧹 已铲</string>
+    <string name="widget_litter">🧹 铲屎</string>
 </resources>

@@ -34,12 +34,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.omrcat.catplan.AppViewModel
+import io.github.omrcat.catplan.R
 import io.github.omrcat.catplan.data.local.CatEntity
 import io.github.omrcat.catplan.data.local.ExpenseEntity
 import io.github.omrcat.catplan.domain.Expense
@@ -74,7 +76,7 @@ fun LedgerScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) 
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("账本", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.ledger_title), style = MaterialTheme.typography.headlineSmall)
         Text(
             "${today.year}年${today.monthValue}月",
             style = MaterialTheme.typography.titleMedium,
@@ -86,14 +88,14 @@ fun LedgerScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) 
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("本月总支出", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.ledger_total), style = MaterialTheme.typography.titleMedium)
                 Text(
                     LedgerMath.formatCents(summary.totalCents),
                     style = MaterialTheme.typography.headlineLarge,
                 )
                 if (summary.byCategory.isEmpty()) {
                     Text(
-                        "这个月还没记账，点下面记一笔 💰",
+                        stringResource(R.string.ledger_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -114,9 +116,9 @@ fun LedgerScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) 
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("按猫分摊", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.ledger_by_cat), style = MaterialTheme.typography.titleMedium)
                 if (summary.byCat.isEmpty()) {
-                    Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.ledger_dash), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     summary.byCat.forEach { (name, cents) ->
                         Row(
@@ -140,9 +142,9 @@ fun LedgerScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) 
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("最近记录", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.ledger_recent), style = MaterialTheme.typography.titleMedium)
                 if (expenses.isEmpty()) {
-                    Text("还没有花费记录", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.ledger_no_records), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     expenses.take(8).forEach { item ->
                         Row(
@@ -185,11 +187,11 @@ fun LedgerScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) 
             onClick = { showAddDialog = true },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("＋ 记一笔")
+            Text(stringResource(R.string.ledger_add))
         }
 
         Text(
-            "金额只保存在本机。",
+            stringResource(R.string.ledger_local_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -202,7 +204,7 @@ fun LedgerScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) 
             onSave = { catId, cents, category, note ->
                 showAddDialog = false
                 vm.addExpense(catId, cents, category, note)
-                Toast.makeText(context, "已记账 ✅", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_expense_saved), Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -255,13 +257,13 @@ private fun AddExpenseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("记一笔") },
+        title = { Text(stringResource(R.string.expense_title)) },
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("给谁花的", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.expense_who), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip(
                         selected = selectedCatId == null,
@@ -276,7 +278,7 @@ private fun AddExpenseDialog(
                         )
                     }
                 }
-                Text("类目", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.expense_category), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ExpenseEntity.CATEGORIES.forEach { c ->
                         FilterChip(selected = category == c, onClick = { category = c }, label = { Text(c) })
@@ -285,7 +287,7 @@ private fun AddExpenseDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("金额 (元)") },
+                    label = { Text(stringResource(R.string.expense_amount)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = amountText.isNotBlank() && cents == null,
@@ -293,7 +295,7 @@ private fun AddExpenseDialog(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("备注（选填）") },
+                    label = { Text(stringResource(R.string.expense_note)) },
                     singleLine = true,
                 )
             }
@@ -302,7 +304,7 @@ private fun AddExpenseDialog(
             TextButton(
                 enabled = cents != null,
                 onClick = { onSave(selectedCatId, cents!!, category, note.trim().takeIf { it.isNotEmpty() }) },
-            ) { Text("保存") }
+            ) { Text(stringResource(R.string.common_save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )

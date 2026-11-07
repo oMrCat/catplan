@@ -24,6 +24,12 @@ object PhotoStore {
 
     fun delete(path: String): Boolean = runCatching { File(path).delete() }.getOrDefault(false)
 
+    /** 删除某只猫的全部相册文件（删猫时调用；记录由外键级联清理） */
+    fun deleteForCat(context: Context, catId: Long) {
+        val dir = File(context.filesDir, DIR)
+        dir.listFiles { file -> file.name.startsWith("cat_${catId}_") }?.forEach { it.delete() }
+    }
+
     /** 缩放解码，避免大图 OOM */
     fun load(path: String, targetSize: Int = 512): Bitmap? = runCatching {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

@@ -17,10 +17,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.omrcat.catplan.AppViewModel
+import io.github.omrcat.catplan.R
 import java.time.LocalDate
 
 /**
@@ -39,9 +41,9 @@ fun CalendarScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("健康日历", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.calendar_title), style = MaterialTheme.typography.headlineSmall)
         Text(
-            "${today.year}年${today.monthValue}月 · 未来 30 天",
+            stringResource(R.string.calendar_period, today.year, today.monthValue),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -51,10 +53,10 @@ fun CalendarScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("即将到来", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.calendar_upcoming), style = MaterialTheme.typography.titleMedium)
                 if (tasks.isEmpty()) {
                     Text(
-                        "近 30 天没有安排。添加猫咪后，护理计划会按生日自动生成 ✨",
+                        stringResource(R.string.calendar_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -71,7 +73,7 @@ fun CalendarScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier
         }
 
         Text(
-            "提醒按猫龄与免疫周期自动生成，到期前 3 天本地推送。",
+            stringResource(R.string.calendar_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -107,16 +109,18 @@ private fun EventRow(date: String, title: String, subtitle: String) {
     }
 }
 
+@Composable
 private fun dayLabel(d: LocalDate, today: LocalDate): String = when (d) {
-    today -> "今天"
-    today.plusDays(1) -> "明天"
-    else -> "${d.monthValue}月${d.dayOfMonth}日"
+    today -> stringResource(R.string.day_today)
+    today.plusDays(1) -> stringResource(R.string.day_tomorrow)
+    else -> stringResource(R.string.date_short, d.monthValue, d.dayOfMonth)
 }
 
+@Composable
 private fun intervalText(days: Int): String = when (days) {
-    0 -> "一次性"
-    30 -> "每 1 个月"
-    90 -> "每 3 个月"
-    365 -> "每年"
-    else -> "每 $days 天"
+    0 -> stringResource(R.string.interval_once)
+    30 -> stringResource(R.string.interval_monthly)
+    90 -> stringResource(R.string.interval_quarterly)
+    365 -> stringResource(R.string.interval_yearly)
+    else -> stringResource(R.string.interval_days, days)
 }

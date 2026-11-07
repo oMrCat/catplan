@@ -81,7 +81,10 @@ fun CatPlanApp(widthSizeClass: WindowWidthSizeClass, initialTab: String = "today
                 route = "cat/{catId}",
                 arguments = listOf(navArgument("catId") { type = NavType.LongType }),
             ) { entry ->
-                CatDetailScreen(catId = entry.arguments?.getLong("catId") ?: 0L)
+                CatDetailScreen(
+                    catId = entry.arguments?.getLong("catId") ?: 0L,
+                    onCatDeleted = { navController.popBackStack() },
+                )
             }
         }
     }

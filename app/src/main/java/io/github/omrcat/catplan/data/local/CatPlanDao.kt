@@ -51,11 +51,21 @@ interface DailyDao {
     @Query("SELECT * FROM dailies WHERE dateEpochDay >= :sinceEpochDay ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
     fun observeSince(sinceEpochDay: Long): Flow<List<DailyEntity>>
 
+    @Query("SELECT * FROM dailies WHERE dateEpochDay >= :sinceEpochDay ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
+    suspend fun getSince(sinceEpochDay: Long): List<DailyEntity>
+
     @Query("SELECT * FROM dailies ORDER BY dateEpochDay")
     suspend fun getAll(): List<DailyEntity>
 
+    /** 当天某类型的打卡记录；全家与按猫一并返回，由调用方按展示需要过滤 */
+    @Query("SELECT * FROM dailies WHERE type = :type AND dateEpochDay = :dateEpochDay ORDER BY createdAtEpochMs")
+    suspend fun getForDay(type: String, dateEpochDay: Long): List<DailyEntity>
+
     @Insert
     suspend fun insert(daily: DailyEntity): Long
+
+    @Delete
+    suspend fun delete(daily: DailyEntity)
 }
 
 @Dao
@@ -114,6 +124,10 @@ interface CareTaskDao {
 
     @Insert
     suspend fun insert(task: CareTaskEntity): Long
+
+    /** 删除某只猫的全部待办任务（生日变更时重建计划用） */
+    @Query("DELETE FROM care_tasks WHERE catId = :catId AND status = 'pending'")
+    suspend fun deletePendingForCat(catId: Long)
 
     /** 完成任务；周期任务由 UI 层按 intervalDays 生成下一轮再写入 */
     @Query("UPDATE care_tasks SET status = 'done', completedAtEpochMs = :completedAtEpochMs WHERE id = :taskId")

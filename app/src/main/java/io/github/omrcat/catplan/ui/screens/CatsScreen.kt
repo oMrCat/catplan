@@ -32,11 +32,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.omrcat.catplan.R
 import io.github.omrcat.catplan.AppViewModel
 import io.github.omrcat.catplan.domain.CatAge
 import java.time.LocalDate
@@ -59,11 +61,11 @@ fun CatsScreen(vm: AppViewModel = viewModel(), onOpenCat: (Long) -> Unit = {}, m
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("猫咪档案", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.cats_title), style = MaterialTheme.typography.headlineSmall)
 
         if (cats.isEmpty()) {
             Text(
-                "还没有猫咪，点下面的按钮添加吧 🐾",
+                stringResource(R.string.cats_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -88,19 +90,20 @@ fun CatsScreen(vm: AppViewModel = viewModel(), onOpenCat: (Long) -> Unit = {}, m
                         Text(
                             listOfNotNull(cat.breed, CatAge.describe(LocalDate.ofEpochDay(cat.birthdayEpochDay)))
                                 .joinToString(" · ")
-                                .ifEmpty { "信息未填写" },
+                                .ifEmpty { stringResource(R.string.cats_info_empty) },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            weights[cat.id]?.let { "%.1f kg".format(it / 1000.0) } ?: "暂无体重记录",
+                            weights[cat.id]?.let { "%.1f kg".format(it / 1000.0) }
+                                ?: stringResource(R.string.cats_no_weight),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (cat.neutered) {
                         Text(
-                            "已绝育",
+                            stringResource(R.string.form_neutered),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.secondary,
                         )
@@ -113,125 +116,30 @@ fun CatsScreen(vm: AppViewModel = viewModel(), onOpenCat: (Long) -> Unit = {}, m
             onClick = { showAddDialog = true },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("＋ 添加猫咪")
+            Text(stringResource(R.string.cats_add))
         }
 
         Text(
-            "数据只保存在本机，不上传任何服务器。",
+            stringResource(R.string.cats_local_only),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 
     if (showAddDialog) {
-        AddCatDialog(
+        CatFormDialog(
             onDismiss = { showAddDialog = false },
-            onSave = { name, breed, gender, birthday, neutered, emoji ->
+            onSave = { name, breed, gender, birthday, neutered, emoji, _ ->
                 showAddDialog = false
                 vm.addCat(name, breed, gender, birthday, neutered, emoji) { count ->
-                    Toast.makeText(context, "已为 $name 生成 $count 项护理计划 ✨", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.toast_cat_added, name, count),
+                        Toast.LENGTH_LONG,
+                    ).show()
                 }
             },
         )
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun AddCatDialog(
-    onDismiss: () -> Unit,
-    onSave: (name: String, breed: String, gender: String?, birthday: LocalDate, neutered: Boolean, emoji: String) -> Unit,
-) {
-    var name by remember { mutableStateOf("") }
-    var breed by remember { mutableStateOf("") }
-    var year by remember { mutableStateOf("2024") }
-    var month by remember { mutableStateOf("1") }
-    var day by remember { mutableStateOf("1") }
-    var isBoy by remember { mutableStateOf(true) }
-    var neutered by remember { mutableStateOf(false) }
-    var emoji by remember { mutableStateOf("🍊") }
-
-    val emojis = listOf("🍊", "🍡", "🐈‍⬛", "😹", "🐟", "🥷")
-    val birthday = runCatching { LocalDate.of(year.toInt(), month.toInt(), day.toInt()) }.getOrNull()
-    val valid = name.isNotBlank() && birthday != null && birthday.isBefore(LocalDate.now())
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("添加猫咪") },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("名字 *") },
-                    singleLine = true,
-                )
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    emojis.forEach { e ->
-                        FilterChip(selected = emoji == e, onClick = { emoji = e }, label = { Text(e) })
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedTextField(
-                        value = year,
-                        onValueChange = { year = it },
-                        label = { Text("出生年") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = month,
-                        onValueChange = { month = it },
-                        label = { Text("月") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                    )
-                    OutlinedTextField(
-                        value = day,
-                        onValueChange = { day = it },
-                        label = { Text("日") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                OutlinedTextField(
-                    value = breed,
-                    onValueChange = { breed = it },
-                    label = { Text("品种（选填）") },
-                    singleLine = true,
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    FilterChip(selected = isBoy, onClick = { isBoy = true }, label = { Text("弟弟") })
-                    FilterChip(selected = !isBoy, onClick = { isBoy = false }, label = { Text("妹妹") })
-                    Checkbox(checked = neutered, onCheckedChange = { neutered = it })
-                    Text("已绝育")
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = valid,
-                onClick = {
-                    onSave(
-                        name.trim(),
-                        breed.trim(),
-                        if (isBoy) "boy" else "girl",
-                        birthday!!,
-                        neutered,
-                        emoji,
-                    )
-                },
-            ) { Text("保存") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
-    )
-}

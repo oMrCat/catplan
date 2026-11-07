@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,12 +29,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.omrcat.catplan.AppViewModel
+import io.github.omrcat.catplan.R
 import io.github.omrcat.catplan.data.local.CatEntity
 import io.github.omrcat.catplan.data.local.DailyEntity
 import java.time.LocalDate
@@ -52,6 +55,7 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var showWeightDialog by remember { mutableStateOf(false) }
     var showFeedDialog by remember { mutableStateOf(false) }
+    var undoType by remember { mutableStateOf<String?>(null) }
 
     val fedToday = dailies.any { it.type == DailyEntity.TYPE_FEED }
     val litterToday = dailies.any { it.type == DailyEntity.TYPE_LITTER }
@@ -63,9 +67,13 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("早上好，铲屎官 🌤️", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.today_greeting), style = MaterialTheme.typography.headlineSmall)
         Text(
-            "连续记录 $streak 天 · " + if (tasks.isEmpty()) "今天没有待办，安心吸猫" else "有 ${tasks.size} 件护理待办",
+            if (tasks.isEmpty()) {
+                stringResource(R.string.today_streak_none, streak)
+            } else {
+                stringResource(R.string.today_streak_tasks, streak, tasks.size)
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -75,10 +83,10 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("今日待办", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.today_section_tasks), style = MaterialTheme.typography.titleMedium)
                 if (tasks.isEmpty()) {
                     Text(
-                        "近 7 天没有护理安排。去「档案」添加猫咪，护理计划会自动生成 ✨",
+                        stringResource(R.string.today_empty_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -88,7 +96,7 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
                             emoji = item.emoji,
                             title = "${item.catName} · ${item.task.title}",
                             subtitle = dueText(item.dueDate),
-                            action = "完成",
+                            action = stringResource(R.string.today_action_done),
                             onAction = { vm.completeTask(item) },
                         )
                     }
@@ -96,23 +104,30 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
             }
         }
 
-        Text("日常打卡", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.today_section_daily), style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(onClick = { showWeightDialog = true }, label = { Text("记体重") })
+            AssistChip(onClick = { showWeightDialog = true }, label = { Text(stringResource(R.string.daily_weight)) })
             AssistChip(
-                onClick = { showFeedDialog = true },
-                label = { Text(if (fedToday) "已喂 ✓" else "记喂食") },
+                onClick = {
+                    if (fedToday) undoType = DailyEntity.TYPE_FEED else showFeedDialog = true
+                },
+                label = { Text(stringResource(if (fedToday) R.string.daily_fed else R.string.daily_feed)) },
             )
             AssistChip(
                 onClick = {
-                    if (!litterToday) {
+                    if (litterToday) {
+                        undoType = DailyEntity.TYPE_LITTER
+                    } else {
                         vm.addDaily(DailyEntity.TYPE_LITTER, catId = null)
-                        Toast.makeText(context, "铲屎打卡完成 🧹", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.toast_litter_done), Toast.LENGTH_SHORT).show()
                     }
                 },
-                label = { Text(if (litterToday) "已铲 ✓" else "铲屎") },
+                label = { Text(stringResource(if (litterToday) R.string.daily_littered else R.string.daily_litter)) },
             )
-            AssistChip(onClick = { toastComingSoon(context) }, label = { Text("拍日记") })
+            AssistChip(
+                onClick = { Toast.makeText(context, context.getString(R.string.toast_coming_soon), Toast.LENGTH_SHORT).show() },
+                label = { Text(stringResource(R.string.daily_diary)) },
+            )
         }
     }
 
@@ -123,7 +138,7 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
             onSave = { catId, grams ->
                 showWeightDialog = false
                 vm.recordWeight(catId, grams)
-                Toast.makeText(context, "体重已记录 ✅", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_weight_saved), Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -135,7 +150,20 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
             onSave = { catId ->
                 showFeedDialog = false
                 vm.addDaily(DailyEntity.TYPE_FEED, catId)
-                Toast.makeText(context, "喂食打卡完成 🍚", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_feed_done), Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    undoType?.let { type ->
+        UndoDailyDialog(
+            vm = vm,
+            type = type,
+            cats = cats,
+            onDismiss = { undoType = null },
+            onUndo = { daily ->
+                vm.removeDaily(daily)
+                Toast.makeText(context, context.getString(R.string.toast_undone), Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -173,11 +201,11 @@ private fun FeedDailyDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("记喂食") },
+        title = { Text(stringResource(R.string.feed_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "这顿是给谁喂的？",
+                    stringResource(R.string.feed_who),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -185,7 +213,7 @@ private fun FeedDailyDialog(
                     FilterChip(
                         selected = selectedCatId == null,
                         onClick = { selectedCatId = null },
-                        label = { Text("全家") },
+                        label = { Text(stringResource(R.string.common_family)) },
                     )
                     cats.forEach { cat ->
                         FilterChip(
@@ -198,9 +226,9 @@ private fun FeedDailyDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(selectedCatId) }) { Text("打卡") }
+            TextButton(onClick = { onSave(selectedCatId) }) { Text(stringResource(R.string.common_done)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -215,9 +243,9 @@ private fun WeightRecordDialog(
     if (cats.isEmpty()) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("记体重") },
-            text = { Text("先去「档案」添加一只猫咪吧 🐾") },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("好的") } },
+            title = { Text(stringResource(R.string.weight_title)) },
+            text = { Text(stringResource(R.string.weight_need_cat)) },
+            confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_done)) } },
         )
         return
     }
@@ -228,7 +256,7 @@ private fun WeightRecordDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("记体重") },
+        title = { Text(stringResource(R.string.weight_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -243,7 +271,7 @@ private fun WeightRecordDialog(
                 OutlinedTextField(
                     value = weightText,
                     onValueChange = { weightText = it },
-                    label = { Text("体重 (kg)") },
+                    label = { Text(stringResource(R.string.weight_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = weightText.isNotBlank() && (grams == null || grams <= 0),
@@ -254,21 +282,73 @@ private fun WeightRecordDialog(
             TextButton(
                 enabled = grams != null && grams > 0,
                 onClick = { onSave(selected.id, grams!!) },
-            ) { Text("保存") }
+            ) { Text(stringResource(R.string.common_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
+/** 撤销今日打卡：列出当天该类型的全部记录，逐条撤销 */
+@Composable
+private fun UndoDailyDialog(
+    vm: AppViewModel,
+    type: String,
+    cats: List<CatEntity>,
+    onDismiss: () -> Unit,
+    onUndo: (DailyEntity) -> Unit,
+) {
+    var records by remember { mutableStateOf<List<DailyEntity>?>(null) }
+    LaunchedEffect(type) { records = vm.todayDailiesFor(type) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                stringResource(
+                    if (type == DailyEntity.TYPE_FEED) R.string.undo_feed_title else R.string.undo_litter_title,
+                ),
+            )
+        },
+        text = {
+            when {
+                records == null -> Text(stringResource(R.string.common_loading))
+                records!!.isEmpty() -> Text(stringResource(R.string.undo_empty))
+                else -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    records!!.forEach { d ->
+                        val cat = cats.find { it.id == d.catId }
+                        val name = cat?.let { "${it.avatarEmoji} ${it.name}" }
+                            ?: stringResource(R.string.undo_family)
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(name, style = MaterialTheme.typography.bodyMedium)
+                            TextButton(onClick = { onUndo(d) }) { Text(stringResource(R.string.common_undo)) }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) } },
+    )
+}
+
+@Composable
 private fun dueText(due: LocalDate): String {
     val today = LocalDate.now()
+    val dateShort = stringResource(R.string.date_short, due.monthValue, due.dayOfMonth)
     return when {
-        due.isBefore(today) -> "${due.monthValue}月${due.dayOfMonth}日 · 已逾期"
-        due == today -> "今天到期"
-        else -> "${due.monthValue}月${due.dayOfMonth}日 · 还有 ${ChronoUnit.DAYS.between(today, due)} 天"
+        due.isBefore(today) -> stringResource(R.string.today_due_overdue, dateShort)
+        due == today -> stringResource(R.string.today_due_today)
+        else -> stringResource(
+            R.string.today_due_on,
+            dateShort,
+            ChronoUnit.DAYS.between(today, due),
+        )
     }
 }
 
 private fun toastComingSoon(context: android.content.Context) {
-    Toast.makeText(context, "这个功能 v0.3 就来 🚧", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, context.getString(R.string.toast_coming_soon), Toast.LENGTH_SHORT).show()
 }

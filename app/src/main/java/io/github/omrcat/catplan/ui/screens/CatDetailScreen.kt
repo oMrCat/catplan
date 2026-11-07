@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.omrcat.catplan.AppViewModel
 import io.github.omrcat.catplan.data.PhotoStore
+import io.github.omrcat.catplan.R
 import io.github.omrcat.catplan.data.local.CatEntity
 import io.github.omrcat.catplan.data.local.HealthNoteEntity
 import io.github.omrcat.catplan.data.local.PhotoEntity
@@ -75,7 +77,12 @@ import java.time.LocalDate
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
+fun CatDetailScreen(
+    catId: Long,
+    onCatDeleted: () -> Unit = {},
+    vm: AppViewModel = viewModel(),
+    modifier: Modifier = Modifier,
+) {
     val cats by vm.cats.collectAsStateWithLifecycle()
     val cat = cats.find { it.id == catId }
     val weights by remember(catId) { vm.observeWeights(catId) }
@@ -87,6 +94,8 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
     val context = LocalContext.current
     var showWeightDialog by remember { mutableStateOf(false) }
     var showHealthDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteCatConfirm by remember { mutableStateOf(false) }
     var photoToDelete by remember { mutableStateOf<PhotoEntity?>(null) }
     var healthNoteToDelete by remember { mutableStateOf<HealthNoteEntity?>(null) }
 
@@ -143,9 +152,21 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
             }
         }
 
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { showEditDialog = true }, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.detail_edit))
+            }
+            OutlinedButton(
+                onClick = { showDeleteCatConfirm = true },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.detail_delete_cat), color = MaterialTheme.colorScheme.error)
+            }
+        }
+
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("体重记录", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.weight_section), style = MaterialTheme.typography.titleMedium)
                 val latest = weights.maxByOrNull { it.dateEpochDay }
                 Text(
                     latest?.let {
@@ -210,7 +231,7 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
                 OutlinedButton(
                     onClick = { showWeightDialog = true },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("＋ 记体重") }
+                ) { Text(stringResource(R.string.weight_add)) }
             }
         }
 
@@ -221,14 +242,14 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("成长相册", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.album_section), style = MaterialTheme.typography.titleMedium)
                     TextButton(
                         onClick = {
                             pickPhoto.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                             )
                         },
-                    ) { Text("＋ 添加照片") }
+                    ) { Text(stringResource(R.string.album_add)) }
                 }
                 if (photos.isEmpty()) {
                     Text(
@@ -259,8 +280,8 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("健康日记", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = { showHealthDialog = true }) { Text("＋ 记录") }
+                    Text(stringResource(R.string.health_section), style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { showHealthDialog = true }) { Text(stringResource(R.string.health_add)) }
                 }
                 if (healthNotes.isEmpty()) {
                     Text(
@@ -273,7 +294,7 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
                         val flags = HealthFlags.abnormalFlags(note.appetite, note.energy, note.poop, note.urine)
                         val d = LocalDate.ofEpochDay(note.dateEpochDay)
                         Row(
-                            Modifier.fillMaxWidth(),
+                            Modifier.fillMaxWidth().clickable { healthNoteToDelete = note },
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Column(Modifier.weight(1f)) {
@@ -325,7 +346,7 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
             onSave = { grams ->
                 showWeightDialog = false
                 vm.recordWeight(catId, grams)
-                Toast.makeText(context, "体重已记录 ✅", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_weight_saved), Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -337,20 +358,76 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
             onSave = { appetite, energy, poop, urine, text ->
                 showHealthDialog = false
                 vm.addHealthNote(catId, appetite, energy, poop, urine, text)
-                Toast.makeText(context, "健康日记已记录 🩺", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_health_saved), Toast.LENGTH_SHORT).show()
             },
+        )
+    }
+
+    if (showEditDialog && cat != null) {
+        CatFormDialog(
+            cat = cat,
+            onDismiss = { showEditDialog = false },
+            onSave = { name, breed, gender, birthday, neutered, emoji, birthdayChanged ->
+                showEditDialog = false
+                vm.updateCat(
+                    cat.copy(
+                        name = name,
+                        breed = breed.takeIf { it.isNotBlank() },
+                        gender = gender,
+                        birthdayEpochDay = birthday.toEpochDay(),
+                        neutered = neutered,
+                        avatarEmoji = emoji,
+                    ),
+                    birthdayChanged,
+                ) {
+                    if (birthdayChanged) {
+                        Toast.makeText(context, context.getString(R.string.toast_plan_regen), Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.toast_cat_updated), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+        )
+    }
+
+    if (showDeleteCatConfirm && cat != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteCatConfirm = false },
+            title = { Text("删除 ${cat.name}？") },
+            text = { Text(stringResource(R.string.detail_delete_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteCatConfirm = false
+                        vm.deleteCat(cat) { onCatDeleted() }
+                    },
+                ) { Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteCatConfirm = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 
     photoToDelete?.let { photo ->
         AlertDialog(
             onDismissRequest = { photoToDelete = null },
-            title = { Text("删除这张照片？") },
-            text = { Text("删除后无法恢复。") },
+            title = { Text(stringResource(R.string.album_delete_title)) },
+            text = { Text(stringResource(R.string.album_delete_text)) },
             confirmButton = {
-                TextButton(onClick = { vm.deletePhoto(photo); photoToDelete = null }) { Text("删除") }
+                TextButton(onClick = { vm.deletePhoto(photo); photoToDelete = null }) { Text(stringResource(R.string.common_delete)) }
             },
-            dismissButton = { TextButton(onClick = { photoToDelete = null }) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { photoToDelete = null }) { Text(stringResource(R.string.common_cancel)) } },
+        )
+    }
+
+    healthNoteToDelete?.let { note ->
+        AlertDialog(
+            onDismissRequest = { healthNoteToDelete = null },
+            title = { Text(stringResource(R.string.health_delete_title)) },
+            text = { Text(stringResource(R.string.album_delete_text)) },
+            confirmButton = {
+                TextButton(onClick = { vm.deleteHealthNote(note); healthNoteToDelete = null }) { Text(stringResource(R.string.common_delete)) }
+            },
+            dismissButton = { TextButton(onClick = { healthNoteToDelete = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
@@ -386,12 +463,12 @@ private fun FixedCatWeightDialog(cat: CatEntity, onDismiss: () -> Unit, onSave: 
     val grams = text.toDoubleOrNull()?.times(1000)?.toInt()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("给 ${cat.name} 记体重") },
+        title = { Text(stringResource(R.string.weight_for, cat.name)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("体重 (kg)") },
+                label = { Text(stringResource(R.string.weight_label)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = text.isNotBlank() && (grams == null || grams <= 0),
@@ -400,7 +477,7 @@ private fun FixedCatWeightDialog(cat: CatEntity, onDismiss: () -> Unit, onSave: 
         confirmButton = {
             TextButton(enabled = grams != null && grams > 0, onClick = { onSave(grams!!) }) { Text("保存") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -419,7 +496,7 @@ private fun HealthNoteDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("健康日记 · ${cat.name}") },
+        title = { Text(stringResource(R.string.health_dialog_title, cat.name)) },
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
@@ -439,9 +516,9 @@ private fun HealthNoteDialog(
         confirmButton = {
             TextButton(
                 onClick = { onSave(appetite, energy, poop, urine, text.trim().takeIf { it.isNotEmpty() }) },
-            ) { Text("保存") }
+            ) { Text(stringResource(R.string.common_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
