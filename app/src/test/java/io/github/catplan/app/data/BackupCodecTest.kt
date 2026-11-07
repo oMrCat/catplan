@@ -43,7 +43,11 @@ class BackupCodecTest {
     @Test
     fun `往返编解码保持全部字段`() {
         val original = sample()
-        val decoded = BackupCodec.decode(BackupCodec.encode(original))
+        val json1 = BackupCodec.encode(original)
+        val decoded = BackupCodec.decode(json1)
+        val json2 = BackupCodec.encode(decoded)
+        // 失败时消息携带两段完整 JSON，用于平台差异取证
+        assertEquals(json1, json2)
         assertEquals(original.cats, decoded.cats)
         assertEquals(original.weights, decoded.weights)
         assertEquals(original.careTasks, decoded.careTasks)
