@@ -4,6 +4,7 @@ import io.github.omrcat.catplan.data.local.CareTaskEntity
 import io.github.omrcat.catplan.data.local.CatEntity
 import io.github.omrcat.catplan.data.local.DailyEntity
 import io.github.omrcat.catplan.data.local.ExpenseEntity
+import io.github.omrcat.catplan.data.local.HealthNoteEntity
 import io.github.omrcat.catplan.data.local.WeightEntryEntity
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,12 +21,13 @@ object BackupCodec {
         val careTasks: List<CareTaskEntity>,
         val expenses: List<ExpenseEntity>,
         val dailies: List<DailyEntity> = emptyList(),
+        val healthNotes: List<HealthNoteEntity> = emptyList(),
     )
 
     fun encode(d: BackupData): String {
         val root = JSONObject()
             .put("app", "catplan")
-            .put("schemaVersion", 2)
+            .put("schemaVersion", 4)
             .put("exportedAt", System.currentTimeMillis())
 
         root.put(
@@ -107,6 +109,24 @@ object BackupCodec {
                 }
             },
         )
+        root.put(
+            "healthNotes",
+            JSONArray().apply {
+                d.healthNotes.forEach { n ->
+                    put(
+                        JSONObject()
+                            .put("catId", n.catId)
+                            .put("dateEpochDay", n.dateEpochDay)
+                            .put("appetite", n.appetite ?: JSONObject.NULL)
+                            .put("energy", n.energy ?: JSONObject.NULL)
+                            .put("poop", n.poop ?: JSONObject.NULL)
+                            .put("urine", n.urine ?: JSONObject.NULL)
+                            .put("text", n.text ?: JSONObject.NULL)
+                            .put("createdAtEpochMs", n.createdAtEpochMs),
+                    )
+                }
+            },
+        )
         return root.toString(2)
     }
 
@@ -117,6 +137,7 @@ object BackupCodec {
         val tasks = mutableListOf<CareTaskEntity>()
         val expenses = mutableListOf<ExpenseEntity>()
         val dailies = mutableListOf<DailyEntity>()
+        val healthNotes = mutableListOf<HealthNoteEntity>()
 
         root.optJSONArray("cats")?.forEach { c ->
             cats += CatEntity(
@@ -167,7 +188,19 @@ object BackupCodec {
                 createdAtEpochMs = d.optLong("createdAtEpochMs", System.currentTimeMillis()),
             )
         }
-        return BackupData(cats, weights, tasks, expenses, dailies)
+        root.optJSONArray("healthNotes")?.forEach { n ->
+            healthNotes += HealthNoteEntity(
+                catId = n.getLong("catId"),
+                dateEpochDay = n.getLong("dateEpochDay"),
+                appetite = if (n.isNull("appetite")) null else n.optString("appetite"),
+                energy = if (n.isNull("energy")) null else n.optString("energy"),
+                poop = if (n.isNull("poop")) null else n.optString("poop"),
+                urine = if (n.isNull("urine")) null else n.optString("urine"),
+                text = if (n.isNull("text")) null else n.optString("text"),
+                createdAtEpochMs = n.optLong("createdAtEpochMs", System.currentTimeMillis()),
+            )
+        }
+        return BackupData(cats, weights, tasks, expenses, dailies, healthNotes)
     }
 
     private inline fun JSONArray.forEach(action: (JSONObject) -> Unit) {

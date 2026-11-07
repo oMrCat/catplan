@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -59,8 +60,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.omrcat.catplan.AppViewModel
 import io.github.omrcat.catplan.data.PhotoStore
 import io.github.omrcat.catplan.data.local.CatEntity
+import io.github.omrcat.catplan.data.local.HealthNoteEntity
 import io.github.omrcat.catplan.data.local.PhotoEntity
 import io.github.omrcat.catplan.domain.CatAge
+import io.github.omrcat.catplan.domain.HealthFlags
 import io.github.omrcat.catplan.domain.WeightChart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,9 +82,13 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val photos by remember(catId) { vm.observePhotos(catId) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
+    val healthNotes by remember(catId) { vm.observeHealthNotes(catId) }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val context = LocalContext.current
     var showWeightDialog by remember { mutableStateOf(false) }
+    var showHealthDialog by remember { mutableStateOf(false) }
     var photoToDelete by remember { mutableStateOf<PhotoEntity?>(null) }
+    var healthNoteToDelete by remember { mutableStateOf<HealthNoteEntity?>(null) }
 
     val pickPhoto = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia(),
@@ -244,6 +251,71 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
                 )
             }
         }
+
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("健康日记", style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { showHealthDialog = true }) { Text("＋ 记录") }
+                }
+                if (healthNotes.isEmpty()) {
+                    Text(
+                        "记录食欲、精神与排泄情况，异常会醒目标出 🩺",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    healthNotes.take(5).forEach { note ->
+                        val flags = HealthFlags.abnormalFlags(note.appetite, note.energy, note.poop, note.urine)
+                        val d = LocalDate.ofEpochDay(note.dateEpochDay)
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "${d.year}年${d.monthValue}月${d.dayOfMonth}日",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                val observation = listOfNotNull(
+                                    note.appetite?.let { "食欲 $it" },
+                                    note.energy?.let { "精神 $it" },
+                                    note.poop?.let { "便便 $it" },
+                                    note.urine?.let { "尿液 $it" },
+                                    note.text,
+                                ).joinToString(" · ")
+                                if (observation.isNotEmpty()) {
+                                    Text(
+                                        observation,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (flags.isNotEmpty()) MaterialTheme.colorScheme.error
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            if (flags.isNotEmpty()) {
+                                Text(
+                                    if (HealthFlags.urgent(flags)) "⚠️ 尽快就医" else "⚠️ 留意",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    }
+                    if (healthNotes.size > 5) {
+                        Text(
+                            "更早的 ${healthNotes.size - 5} 条记录向下翻找 📜",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
     }
 
     if (showWeightDialog && cat != null) {
@@ -254,6 +326,18 @@ fun CatDetailScreen(catId: Long, vm: AppViewModel = viewModel(), modifier: Modif
                 showWeightDialog = false
                 vm.recordWeight(catId, grams)
                 Toast.makeText(context, "体重已记录 ✅", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    if (showHealthDialog && cat != null) {
+        HealthNoteDialog(
+            cat = cat,
+            onDismiss = { showHealthDialog = false },
+            onSave = { appetite, energy, poop, urine, text ->
+                showHealthDialog = false
+                vm.addHealthNote(catId, appetite, energy, poop, urine, text)
+                Toast.makeText(context, "健康日记已记录 🩺", Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -318,4 +402,71 @@ private fun FixedCatWeightDialog(cat: CatEntity, onDismiss: () -> Unit, onSave: 
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HealthNoteDialog(
+    cat: CatEntity,
+    onDismiss: () -> Unit,
+    onSave: (appetite: String?, energy: String?, poop: String?, urine: String?, text: String?) -> Unit,
+) {
+    var appetite by remember { mutableStateOf<String?>(null) }
+    var energy by remember { mutableStateOf<String?>(null) }
+    var poop by remember { mutableStateOf<String?>(null) }
+    var urine by remember { mutableStateOf<String?>(null) }
+    var text by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("健康日记 · ${cat.name}") },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                ChipGroup("食欲", HealthNoteEntity.APPETITE_OPTIONS, appetite) { appetite = it }
+                ChipGroup("精神", HealthNoteEntity.ENERGY_OPTIONS, energy) { energy = it }
+                ChipGroup("便便", HealthNoteEntity.POOP_OPTIONS, poop) { poop = it }
+                ChipGroup("尿液", HealthNoteEntity.URINE_OPTIONS, urine) { urine = it }
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("备注（选填）") },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(appetite, energy, poop, urine, text.trim().takeIf { it.isNotEmpty() }) },
+            ) { Text("保存") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChipGroup(
+    label: String,
+    options: List<String>,
+    selected: String?,
+    onSelect: (String?) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            options.forEach { option ->
+                FilterChip(
+                    selected = selected == option,
+                    onClick = { onSelect(if (selected == option) null else option) },
+                    label = { Text(option) },
+                )
+            }
+        }
+    }
 }

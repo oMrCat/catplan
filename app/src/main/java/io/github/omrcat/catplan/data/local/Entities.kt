@@ -103,6 +103,60 @@ data class ExpenseEntity(
     }
 }
 
+/** 健康日记：结构化观察记录（食欲/精神/便便/尿液），异常值在 UI 高亮 */
+@Entity(
+    tableName = "health_notes",
+    foreignKeys = [
+        ForeignKey(
+            entity = CatEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["catId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("catId"), Index("dateEpochDay")],
+)
+data class HealthNoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val catId: Long,
+    val dateEpochDay: Long,
+    /** 食欲：好 / 一般 / 差；null = 未记录 */
+    val appetite: String? = null,
+    /** 精神：活泼 / 正常 / 萎靡 */
+    val energy: String? = null,
+    /** 便便：正常 / 软便 / 腹泻 / 便秘 / 带血 */
+    val poop: String? = null,
+    /** 尿液：正常 / 尿多 / 尿少 / 血尿 */
+    val urine: String? = null,
+    val text: String? = null,
+    val createdAtEpochMs: Long = System.currentTimeMillis(),
+) {
+    companion object {
+        const val APPETITE_GOOD = "好"
+        const val APPETITE_OK = "一般"
+        const val APPETITE_POOR = "差"
+        val APPETITE_OPTIONS = listOf(APPETITE_GOOD, APPETITE_OK, APPETITE_POOR)
+
+        const val ENERGY_ACTIVE = "活泼"
+        const val ENERGY_NORMAL = "正常"
+        const val ENERGY_LETHARGIC = "萎靡"
+        val ENERGY_OPTIONS = listOf(ENERGY_ACTIVE, ENERGY_NORMAL, ENERGY_LETHARGIC)
+
+        const val POOP_NORMAL = "正常"
+        const val POOP_SOFT = "软便"
+        const val POOP_DIARRHEA = "腹泻"
+        const val POOP_CONSTIPATED = "便秘"
+        const val POOP_BLOODY = "带血"
+        val POOP_OPTIONS = listOf(POOP_NORMAL, POOP_SOFT, POOP_DIARRHEA, POOP_CONSTIPATED, POOP_BLOODY)
+
+        const val URINE_NORMAL = "正常"
+        const val URINE_MORE = "尿多"
+        const val URINE_LESS = "尿少"
+        const val URINE_BLOODY = "血尿"
+        val URINE_OPTIONS = listOf(URINE_NORMAL, URINE_MORE, URINE_LESS, URINE_BLOODY)
+    }
+}
+
 /** 日常打卡：喂食（按猫或全家）与铲屎（全局） */
 @Entity(
     tableName = "dailies",

@@ -86,6 +86,21 @@ interface ExpenseDao {
 }
 
 @Dao
+interface HealthNoteDao {
+    @Query("SELECT * FROM health_notes WHERE catId = :catId ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
+    fun observeForCat(catId: Long): Flow<List<HealthNoteEntity>>
+
+    @Query("SELECT * FROM health_notes ORDER BY dateEpochDay")
+    suspend fun getAll(): List<HealthNoteEntity>
+
+    @Insert
+    suspend fun insert(note: HealthNoteEntity): Long
+
+    @Delete
+    suspend fun delete(note: HealthNoteEntity)
+}
+
+@Dao
 interface CareTaskDao {
     /** 未来 [untilEpochDay]（含）之前仍待办的任务，供今日页与提醒使用 */
     @Query("SELECT * FROM care_tasks WHERE status = 'pending' AND dueDateEpochDay <= :untilEpochDay ORDER BY dueDateEpochDay")

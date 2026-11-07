@@ -8,8 +8,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [CatEntity::class, WeightEntryEntity::class, CareTaskEntity::class, ExpenseEntity::class, PhotoEntity::class, DailyEntity::class],
-    version = 4,
+    entities = [CatEntity::class, WeightEntryEntity::class, CareTaskEntity::class, ExpenseEntity::class, PhotoEntity::class, DailyEntity::class, HealthNoteEntity::class],
+    version = 5,
     exportSchema = true,
 )
 abstract class CatPlanDatabase : RoomDatabase() {
@@ -20,6 +20,7 @@ abstract class CatPlanDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun photoDao(): PhotoDao
     abstract fun dailyDao(): DailyDao
+    abstract fun healthNoteDao(): HealthNoteDao
 
     companion object {
         @Volatile
@@ -87,6 +88,30 @@ abstract class CatPlanDatabase : RoomDatabase() {
             }
         }
 
+        /** v4 → v5：新增 health_notes 表（健康日记，v0.3） */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS health_notes (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        catId INTEGER NOT NULL,
+                        dateEpochDay INTEGER NOT NULL,
+                        appetite TEXT,
+                        energy TEXT,
+                        poop TEXT,
+                        urine TEXT,
+                        text TEXT,
+                        createdAtEpochMs INTEGER NOT NULL,
+                        FOREIGN KEY(catId) REFERENCES cats(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_health_notes_catId ON health_notes(catId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_health_notes_dateEpochDay ON health_notes(dateEpochDay)")
+            }
+        }
+
         fun get(context: Context): CatPlanDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
@@ -94,7 +119,7 @@ abstract class CatPlanDatabase : RoomDatabase() {
                     CatPlanDatabase::class.java,
                     "catplan.db",
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { instance = it }
             }

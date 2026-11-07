@@ -17,6 +17,7 @@ import io.github.omrcat.catplan.data.local.CatPlanDatabase
 import io.github.omrcat.catplan.data.local.DailyEntity
 import io.github.omrcat.catplan.data.local.ExpenseEntity
 import io.github.omrcat.catplan.data.local.PhotoEntity
+import io.github.omrcat.catplan.data.local.HealthNoteEntity
 import io.github.omrcat.catplan.data.local.WeightEntryEntity
 import io.github.omrcat.catplan.domain.CatBirthday
 import io.github.omrcat.catplan.domain.CareScheduleGenerator
@@ -197,6 +198,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // —— 健康日记 ——
+
+    fun observeHealthNotes(catId: Long) = db.healthNoteDao().observeForCat(catId)
+
+    fun addHealthNote(
+        catId: Long,
+        appetite: String?,
+        energy: String?,
+        poop: String?,
+        urine: String?,
+        text: String?,
+    ) {
+        viewModelScope.launch {
+            db.healthNoteDao().insert(
+                HealthNoteEntity(
+                    catId = catId,
+                    dateEpochDay = LocalDate.now().toEpochDay(),
+                    appetite = appetite,
+                    energy = energy,
+                    poop = poop,
+                    urine = urine,
+                    text = text,
+                ),
+            )
+        }
+    }
+
+    fun deleteHealthNote(note: HealthNoteEntity) {
+        viewModelScope.launch {
+            db.healthNoteDao().delete(note)
+        }
+    }
+
     // —— 备份 / 恢复（JSON）——
 
     private suspend fun collectBackup(): BackupCodec.BackupData = withContext(Dispatchers.IO) {
@@ -205,6 +239,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             weights = weightDao.getAll(),
             careTasks = taskDao.getAll(),
             expenses = expenseDao.getAll(),
+            dailies = dailyDao.getAll(),
+            healthNotes = db.healthNoteDao().getAll(),
         )
     }
 
@@ -236,7 +272,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             expenseDao.insert(e.copy(id = 0, catId = mapped))
             addedExpenses++
         }
-        "已恢复 $addedCats 只新猫、${data.weights.size} 条体重、$addedTasks 项任务、$addedExpenses 笔花费"
+        var addedDailies = 0
+        data.dailies.forEach { d ->
+            val mapped = if (d.catId == null) null else idMap[d.catId] ?: return@forEach
+            dailyDao.insert(d.copy(id = 0, catId = mapped))
+            addedDailies++
+        }
+        var addedNotes = 0
+        data.healthNotes.forEach { n ->
+            val mapped = idMap[n.catId] ?: return@forEach
+            db.healthNoteDao().insert(n.copy(id = 0, catId = mapped))
+            addedNotes++
+        }
+        "已恢复 $addedCats 只新猫、${data.weights.size} 条体重、$addedTasks 项任务、$addedExpenses 笔花费、$addedDailies 次打卡、$addedNotes 条健康日记"
     }
 
     fun exportTo(context: Context, uri: Uri, onDone: (String) -> Unit) {

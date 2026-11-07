@@ -12,4 +12,6 @@
     <string name="channel_care_desc">疫苗、驱虫、体检的到期提醒</string>
     <string name="reminder_title">猫计划 · %1$d 项护理待办</string>
     <string name="reminder_birthday_title">猫计划 · 生日提醒</string>
+    <string name="widget_description">今日待办与喂食铲屎打卡</string>
+    <string name="widget_no_tasks">没有待办，安心吸猫</string>
 </resources>
