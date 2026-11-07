@@ -43,11 +43,8 @@ class BackupCodecTest {
     @Test
     fun `往返编解码保持全部字段`() {
         val original = sample()
-        val json1 = BackupCodec.encode(original)
-        val decoded = BackupCodec.decode(json1)
-        val json2 = BackupCodec.encode(decoded)
-        // 失败时消息携带两段完整 JSON，用于平台差异取证
-        assertEquals(json1, json2)
+        val decoded = BackupCodec.decode(BackupCodec.encode(original))
+        // 逐字段断言（对象相等）；不做 JSON 字符串比对——org.json 键序在个别环境偶发不同，与数据正确性无关
         assertEquals(original.cats, decoded.cats)
         assertEquals(original.weights, decoded.weights)
         assertEquals(original.careTasks, decoded.careTasks)
