@@ -103,6 +103,34 @@ data class ExpenseEntity(
     }
 }
 
+/** 日常打卡：喂食（按猫或全家）与铲屎（全局） */
+@Entity(
+    tableName = "dailies",
+    foreignKeys = [
+        ForeignKey(
+            entity = CatEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["catId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("catId"), Index("dateEpochDay")],
+)
+data class DailyEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** "feed" / "litter" */
+    val type: String,
+    /** 关联猫咪；null = 全家（铲屎为全局时恒为 null） */
+    val catId: Long?,
+    val dateEpochDay: Long,
+    val createdAtEpochMs: Long = System.currentTimeMillis(),
+) {
+    companion object {
+        const val TYPE_FEED = "feed"
+        const val TYPE_LITTER = "litter"
+    }
+}
+
 /** 护理任务：疫苗 / 驱虫 / 体检，由 CareScheduleGenerator 生成 */
 @Entity(
     tableName = "care_tasks",
@@ -131,12 +159,12 @@ data class CareTaskEntity(
     val completedAtEpochMs: Long? = null,
 ) {
     companion object {
-        // 任务类型（与 CareScheduleGenerator 的常量对应）
         const val TYPE_FVRCP = "vaccine_fvrcp"
         const val TYPE_RABIES = "vaccine_rabies"
         const val TYPE_DEWORM_IN = "deworm_in"
         const val TYPE_DEWORM_OUT = "deworm_out"
         const val TYPE_CHECKUP = "checkup"
+        const val TYPE_BIRTHDAY = "birthday"
 
         const val STATUS_PENDING = "pending"
         const val STATUS_DONE = "done"

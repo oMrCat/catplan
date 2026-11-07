@@ -8,9 +8,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import io.github.catplan.app.CatPlanApplication
+import io.github.catplan.app.MainActivity
 import io.github.catplan.app.R
 import io.github.catplan.app.data.local.CatPlanDatabase
-import kotlinx.coroutines.flow.first
+import io.github.catplan.app.domain.CatBirthday
 import java.time.LocalDate
 
 /**
@@ -24,29 +25,48 @@ class ReminderWorker(
 
     override suspend fun doWork(): Result {
         val db = CatPlanDatabase.get(applicationContext)
-        val until = LocalDate.now().plusDays(3).toEpochDay()
+        val today = LocalDate.now()
+        val until = today.plusDays(3).toEpochDay()
         val dueTasks = db.careTaskDao().getDueWithin(until)
-        if (dueTasks.isEmpty()) return Result.success()
+        val cats = db.catDao().getAll()
 
-        val cats = db.catDao().observeAll().first().associateBy { it.id }
-        val lines = dueTasks
+        // 生日提醒：3 天内的下一个生日
+        val birthdayLines = cats.mapNotNull { cat ->
+            val days = CatBirthday.daysUntil(LocalDate.ofEpochDay(cat.birthdayEpochDay), today)
+            when {
+                days == 0 -> "🎂 ${cat.name} 的生日就是今天！"
+                days in 1..3 -> "🎂 ${cat.name} 的生日还有 $days 天"
+                else -> null
+            }
+        }
+        if (dueTasks.isEmpty() && birthdayLines.isEmpty()) return Result.success()
+
+        val taskLines = dueTasks
             .groupBy { it.catId }
             .map { (catId, tasks) ->
-                val name = cats[catId]?.name ?: "猫咪"
+                val name = cats.find { it.id == catId }?.name ?: "猫咪"
                 "$name：" + tasks.joinToString("、") { it.title }
             }
-            .joinToString("\n")
+        val lines = (taskLines + birthdayLines).joinToString("\n")
 
         val contentIntent = PendingIntent.getActivity(
             applicationContext,
             0,
-            applicationContext.packageManager.getLaunchIntentForPackage(applicationContext.packageName),
+            Intent(applicationContext, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("open_tab", "today")
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val title = if (dueTasks.isEmpty()) {
+            applicationContext.getString(R.string.reminder_birthday_title)
+        } else {
+            applicationContext.getString(R.string.reminder_title, dueTasks.size)
+        }
         val notification = NotificationCompat.Builder(applicationContext, CatPlanApplication.CHANNEL_ID_CARE)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(applicationContext.getString(R.string.reminder_title, dueTasks.size))
+            .setContentTitle(title)
             .setContentText(lines)
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines))
             .setContentIntent(contentIntent)

@@ -1,5 +1,6 @@
 [versions]
 junit = "4.13.2"
+robolectric = "4.13"
 testExtJunit = "1.2.1"
 testRules = "1.6.1"
 agp = "8.6.1"
@@ -15,6 +16,8 @@ work = "2.9.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "work" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" }
 androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "testRules" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }

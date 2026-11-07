@@ -19,10 +19,10 @@ jobs:
       # ubuntu runner 自带 Android SDK 且许可已接受，AGP 按需下载缺失的 platform/build-tools
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build & Unit Test
+      - name: Build, Lint & Unit Test
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug :app:testDebugUnitTest --stacktrace
+          ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

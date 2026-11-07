@@ -34,21 +34,27 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.catplan.app.AppViewModel
-import io.github.catplan.app.CareTaskWithCat
 import io.github.catplan.app.data.local.CatEntity
+import io.github.catplan.app.data.local.DailyEntity
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 /**
- * 今日页：问候 + 真实待办卡片 + 快捷记录。
- * 待办来自 CareTaskDao（未来 7 天含逾期），「完成」会把周期任务滚动到下一轮。
+ * 今日页：问候（真实连续天数）+ 真实待办卡片 + 日常打卡。
+ * 待办来自 CareTaskDao（未来 7 天含逾期）与生日推导；「完成」会把周期任务滚动到下一轮。
  */
 @Composable
 fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
     val tasks by vm.upcomingTasks.collectAsStateWithLifecycle()
     val cats by vm.cats.collectAsStateWithLifecycle()
+    val streak by vm.streak.collectAsStateWithLifecycle()
+    val dailies by vm.todayDailies.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showWeightDialog by remember { mutableStateOf(false) }
+    var showFeedDialog by remember { mutableStateOf(false) }
+
+    val fedToday = dailies.any { it.type == DailyEntity.TYPE_FEED }
+    val litterToday = dailies.any { it.type == DailyEntity.TYPE_LITTER }
 
     Column(
         modifier = modifier
@@ -59,7 +65,7 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
     ) {
         Text("早上好，铲屎官 🌤️", style = MaterialTheme.typography.headlineSmall)
         Text(
-            if (tasks.isEmpty()) "今天没有待办，安心吸猫" else "今天有 ${tasks.size} 件护理待办",
+            "连续记录 $streak 天 · " + if (tasks.isEmpty()) "今天没有待办，安心吸猫" else "有 ${tasks.size} 件护理待办",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -90,11 +96,22 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
             }
         }
 
-        Text("快捷记录", style = MaterialTheme.typography.titleMedium)
+        Text("日常打卡", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(onClick = { showWeightDialog = true }, label = { Text("记体重") })
-            AssistChip(onClick = { toastComingSoon(context) }, label = { Text("记喂食") })
-            AssistChip(onClick = { toastComingSoon(context) }, label = { Text("记用药") })
+            AssistChip(
+                onClick = { showFeedDialog = true },
+                label = { Text(if (fedToday) "已喂 ✓" else "记喂食") },
+            )
+            AssistChip(
+                onClick = {
+                    if (!litterToday) {
+                        vm.addDaily(DailyEntity.TYPE_LITTER, catId = null)
+                        Toast.makeText(context, "铲屎打卡完成 🧹", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                label = { Text(if (litterToday) "已铲 ✓" else "铲屎") },
+            )
             AssistChip(onClick = { toastComingSoon(context) }, label = { Text("拍日记") })
         }
     }
@@ -107,6 +124,18 @@ fun TodayScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
                 showWeightDialog = false
                 vm.recordWeight(catId, grams)
                 Toast.makeText(context, "体重已记录 ✅", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    if (showFeedDialog) {
+        FeedDailyDialog(
+            cats = cats,
+            onDismiss = { showFeedDialog = false },
+            onSave = { catId ->
+                showFeedDialog = false
+                vm.addDaily(DailyEntity.TYPE_FEED, catId)
+                Toast.makeText(context, "喂食打卡完成 🍚", Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -132,6 +161,50 @@ private fun TaskRow(emoji: String, title: String, subtitle: String, action: Stri
     }
 }
 
+/** 喂食打卡：选全家或指定猫 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FeedDailyDialog(
+    cats: List<CatEntity>,
+    onDismiss: () -> Unit,
+    onSave: (catId: Long?) -> Unit,
+) {
+    var selectedCatId by remember { mutableStateOf<Long?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("记喂食") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "这顿是给谁喂的？",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip(
+                        selected = selectedCatId == null,
+                        onClick = { selectedCatId = null },
+                        label = { Text("全家") },
+                    )
+                    cats.forEach { cat ->
+                        FilterChip(
+                            selected = selectedCatId == cat.id,
+                            onClick = { selectedCatId = cat.id },
+                            label = { Text("${cat.avatarEmoji} ${cat.name}") },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(selectedCatId) }) { Text("打卡") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
+}
+
+/** 记体重：选猫 + 千克输入 */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun WeightRecordDialog(
@@ -197,5 +270,5 @@ private fun dueText(due: LocalDate): String {
 }
 
 private fun toastComingSoon(context: android.content.Context) {
-    Toast.makeText(context, "这个功能 v0.2 就来 🚧", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, "这个功能 v0.3 就来 🚧", Toast.LENGTH_SHORT).show()
 }

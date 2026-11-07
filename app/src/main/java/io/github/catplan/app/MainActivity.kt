@@ -26,10 +26,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // 通知点击直达：ReminderWorker 传入 open_tab
+        val startTab = intent?.getStringExtra("open_tab") ?: "today"
         setContent {
             CatPlanTheme {
                 val windowSizeClass = calculateWindowSizeClass(this)
-                CatPlanApp(widthSizeClass = windowSizeClass.widthSizeClass)
+                CatPlanApp(widthSizeClass = windowSizeClass.widthSizeClass, initialTab = startTab)
             }
         }
     }

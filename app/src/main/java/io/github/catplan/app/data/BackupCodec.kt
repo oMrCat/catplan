@@ -2,6 +2,7 @@ package io.github.catplan.app.data
 
 import io.github.catplan.app.data.local.CareTaskEntity
 import io.github.catplan.app.data.local.CatEntity
+import io.github.catplan.app.data.local.DailyEntity
 import io.github.catplan.app.data.local.ExpenseEntity
 import io.github.catplan.app.data.local.WeightEntryEntity
 import org.json.JSONArray
@@ -18,6 +19,7 @@ object BackupCodec {
         val weights: List<WeightEntryEntity>,
         val careTasks: List<CareTaskEntity>,
         val expenses: List<ExpenseEntity>,
+        val dailies: List<DailyEntity> = emptyList(),
     )
 
     fun encode(d: BackupData): String {
@@ -90,6 +92,19 @@ object BackupCodec {
                 }
             },
         )
+        root.put(
+            "dailies",
+            JSONArray().apply {
+                d.dailies.forEach { dly ->
+                    put(
+                        JSONObject()
+                            .put("type", dly.type)
+                            .put("catId", dly.catId ?: JSONObject.NULL)
+                            .put("dateEpochDay", dly.dateEpochDay),
+                    )
+                }
+            },
+        )
         return root.toString(2)
     }
 
@@ -99,6 +114,7 @@ object BackupCodec {
         val weights = mutableListOf<WeightEntryEntity>()
         val tasks = mutableListOf<CareTaskEntity>()
         val expenses = mutableListOf<ExpenseEntity>()
+        val dailies = mutableListOf<DailyEntity>()
 
         root.optJSONArray("cats")?.forEach { c ->
             cats += CatEntity(
@@ -140,7 +156,14 @@ object BackupCodec {
                 dateEpochDay = e.getLong("dateEpochDay"),
             )
         }
-        return BackupData(cats, weights, tasks, expenses)
+        root.optJSONArray("dailies")?.forEach { d ->
+            dailies += DailyEntity(
+                type = d.getString("type"),
+                catId = if (d.isNull("catId")) null else d.getLong("catId"),
+                dateEpochDay = d.getLong("dateEpochDay"),
+            )
+        }
+        return BackupData(cats, weights, tasks, expenses, dailies)
     }
 
     private inline fun JSONArray.forEach(action: (JSONObject) -> Unit) {

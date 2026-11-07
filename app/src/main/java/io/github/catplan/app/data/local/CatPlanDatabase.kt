@@ -8,8 +8,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [CatEntity::class, WeightEntryEntity::class, CareTaskEntity::class, ExpenseEntity::class, PhotoEntity::class],
-    version = 3,
+    entities = [CatEntity::class, WeightEntryEntity::class, CareTaskEntity::class, ExpenseEntity::class, PhotoEntity::class, DailyEntity::class],
+    version = 4,
     exportSchema = true,
 )
 abstract class CatPlanDatabase : RoomDatabase() {
@@ -19,6 +19,7 @@ abstract class CatPlanDatabase : RoomDatabase() {
     abstract fun careTaskDao(): CareTaskDao
     abstract fun expenseDao(): ExpenseDao
     abstract fun photoDao(): PhotoDao
+    abstract fun dailyDao(): DailyDao
 
     companion object {
         @Volatile
@@ -66,6 +67,26 @@ abstract class CatPlanDatabase : RoomDatabase() {
             }
         }
 
+        /** v3 → v4：新增 dailies 表（喂食/铲屎打卡，v0.3） */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS dailies (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        type TEXT NOT NULL,
+                        catId INTEGER,
+                        dateEpochDay INTEGER NOT NULL,
+                        createdAtEpochMs INTEGER NOT NULL,
+                        FOREIGN KEY(catId) REFERENCES cats(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_dailies_catId ON dailies(catId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_dailies_dateEpochDay ON dailies(dateEpochDay)")
+            }
+        }
+
         fun get(context: Context): CatPlanDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
@@ -73,7 +94,7 @@ abstract class CatPlanDatabase : RoomDatabase() {
                     CatPlanDatabase::class.java,
                     "catplan.db",
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }

@@ -14,10 +14,13 @@ import io.github.catplan.app.data.WebDavClient
 import io.github.catplan.app.data.local.CareTaskEntity
 import io.github.catplan.app.data.local.CatEntity
 import io.github.catplan.app.data.local.CatPlanDatabase
+import io.github.catplan.app.data.local.DailyEntity
 import io.github.catplan.app.data.local.ExpenseEntity
 import io.github.catplan.app.data.local.PhotoEntity
 import io.github.catplan.app.data.local.WeightEntryEntity
+import io.github.catplan.app.domain.CatBirthday
 import io.github.catplan.app.domain.CareScheduleGenerator
+import io.github.catplan.app.domain.Streak
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +30,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 /** UI 层展示用的任务 + 猫咪组合 */
 data class CareTaskWithCat(
@@ -58,6 +62,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val weightDao = db.weightDao()
     private val expenseDao = db.expenseDao()
     private val photoDao = db.photoDao()
+    private val dailyDao = db.dailyDao()
     private val today: LocalDate = LocalDate.now()
 
     // —— WebDAV 配置（保存在本机 SharedPreferences）——
@@ -71,18 +76,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val cats: StateFlow<List<CatEntity>> = catDao.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** 今天（含已逾期）到未来 7 天的待办 */
+    /** 今天（含已逾期）到未来 7 天的待办 + 3 天内的生日 */
     val upcomingTasks: StateFlow<List<CareTaskWithCat>> = combine(
         taskDao.observeDueWithin(today.plusDays(7).toEpochDay()),
         cats,
-    ) { tasks, cats -> tasks.withCat(cats) }
+    ) { tasks, cats -> tasks.withCat(cats) + birthdayTasks(cats, withinDays = 7) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** 未来 30 天的日历任务 */
+    /** 未来 30 天的日历任务 + 30 天内的生日 */
     val calendarTasks: StateFlow<List<CareTaskWithCat>> = combine(
         taskDao.observeDueWithin(today.plusDays(30).toEpochDay()),
         cats,
-    ) { tasks, cats -> tasks.withCat(cats) }
+    ) { tasks, cats -> tasks.withCat(cats) + birthdayTasks(cats, withinDays = 30) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** 每只猫的最新体重（克） */
@@ -322,6 +327,48 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    /** 连续记录天数（打卡 + 体重） */
+    val streak: StateFlow<Int> = combine(
+        dailyDao.observeSince(0),
+        weightDao.observeAll(),
+    ) { dailies, weights ->
+        Streak.streakDays(
+            dailies.map { it.dateEpochDay } + weights.map { it.dateEpochDay },
+            today.toEpochDay(),
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** 今天的打卡记录 */
+    val todayDailies: StateFlow<List<DailyEntity>> = dailyDao.observeSince(today.toEpochDay())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** 打卡：type = feed（catId 可为 null=全家）/ litter（catId 恒为 null） */
+    fun addDaily(type: String, catId: Long?) {
+        viewModelScope.launch {
+            dailyDao.insert(DailyEntity(type = type, catId = catId, dateEpochDay = today.toEpochDay()))
+        }
+    }
+
+    /** 生日伪任务：从猫咪生日实时推导，不入库 */
+    private fun birthdayTasks(cats: List<CatEntity>, withinDays: Long): List<CareTaskWithCat> =
+        cats.mapNotNull { cat ->
+            val next = CatBirthday.nextBirthday(LocalDate.ofEpochDay(cat.birthdayEpochDay), today)
+            val days = ChronoUnit.DAYS.between(today, next)
+            if (days <= withinDays) {
+                CareTaskWithCat(
+                    task = CareTaskEntity(
+                        catId = cat.id,
+                        type = CareTaskEntity.TYPE_BIRTHDAY,
+                        title = "🎂 ${cat.name} 的生日",
+                        dueDateEpochDay = next.toEpochDay(),
+                        intervalDays = 365,
+                    ),
+                    catName = cat.name,
+                    emoji = cat.avatarEmoji,
+                )
+            } else null
+        }
 
     private fun List<CareTaskEntity>.withCat(cats: List<CatEntity>): List<CareTaskWithCat> {
         val byId = cats.associateBy { it.id }

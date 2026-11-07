@@ -47,6 +47,18 @@ interface WeightDao {
 }
 
 @Dao
+interface DailyDao {
+    @Query("SELECT * FROM dailies WHERE dateEpochDay >= :sinceEpochDay ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
+    fun observeSince(sinceEpochDay: Long): Flow<List<DailyEntity>>
+
+    @Query("SELECT * FROM dailies ORDER BY dateEpochDay")
+    suspend fun getAll(): List<DailyEntity>
+
+    @Insert
+    suspend fun insert(daily: DailyEntity): Long
+}
+
+@Dao
 interface PhotoDao {
     @Query("SELECT * FROM photos WHERE catId = :catId ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
     fun observeForCat(catId: Long): Flow<List<PhotoEntity>>

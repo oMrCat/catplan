@@ -52,7 +52,7 @@ private val TABS = listOf(
  * v0.2 计划在宽屏下进一步提供「左侧猫列表 + 右侧详情」的双栏布局。
  */
 @Composable
-fun CatPlanApp(widthSizeClass: WindowWidthSizeClass) {
+fun CatPlanApp(widthSizeClass: WindowWidthSizeClass, initialTab: String = "today") {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -69,7 +69,7 @@ fun CatPlanApp(widthSizeClass: WindowWidthSizeClass) {
     }
 
     val navHost: @Composable (Modifier) -> Unit = { modifier ->
-        NavHost(navController = navController, startDestination = "today", modifier = modifier) {
+        NavHost(navController = navController, startDestination = initialTab, modifier = modifier) {
             composable("today") { TodayScreen() }
             composable("calendar") { CalendarScreen() }
             composable("cats") {
