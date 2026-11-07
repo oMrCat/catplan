@@ -54,10 +54,23 @@ class BackupCodecTest {
     @Test
     fun `可空字段为null时解码还原为null而不是null字符串`() {
         val decoded = BackupCodec.decode(BackupCodec.encode(sample()))
-        assertNull(decoded.cats[0].breed)
-        assertNull(decoded.cats[1].gender)
-        assertNull(decoded.expenses[0].catId)
-        assertNull(decoded.dailies[1].catId)
+        // 断言消息携带实际值：Windows 本地绿 / Linux CI 挂的平台差异取证
+        assertTrue(
+            "cats[0].breed=${decoded.cats[0].breed}",
+            decoded.cats[0].breed == null,
+        )
+        assertTrue(
+            "cats[1].gender=${decoded.cats[1].gender}",
+            decoded.cats[1].gender == null,
+        )
+        assertTrue(
+            "expenses[0].catId=${decoded.expenses[0].catId}",
+            decoded.expenses[0].catId == null,
+        )
+        assertTrue(
+            "dailies[1].catId=${decoded.dailies[1].catId}",
+            decoded.dailies[1].catId == null,
+        )
     }
 
     @Test
