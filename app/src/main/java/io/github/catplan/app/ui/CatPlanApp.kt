@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Pets
@@ -28,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import io.github.catplan.app.R
 import io.github.catplan.app.ui.screens.CalendarScreen
 import io.github.catplan.app.ui.screens.CatsScreen
+import io.github.catplan.app.ui.screens.LedgerScreen
 import io.github.catplan.app.ui.screens.TodayScreen
 
 private data class TabItem(val route: String, val labelRes: Int, val icon: ImageVector)
@@ -36,6 +38,7 @@ private val TABS = listOf(
     TabItem(route = "today", labelRes = R.string.tab_today, icon = Icons.Filled.Home),
     TabItem(route = "calendar", labelRes = R.string.tab_calendar, icon = Icons.Filled.CalendarMonth),
     TabItem(route = "cats", labelRes = R.string.tab_cats, icon = Icons.Filled.Pets),
+    TabItem(route = "ledger", labelRes = R.string.tab_ledger, icon = Icons.Filled.AccountBalanceWallet),
 )
 
 /**
@@ -64,6 +67,7 @@ fun CatPlanApp(widthSizeClass: WindowWidthSizeClass) {
             composable("today") { TodayScreen() }
             composable("calendar") { CalendarScreen() }
             composable("cats") { CatsScreen() }
+            composable("ledger") { LedgerScreen() }
         }
     }
 

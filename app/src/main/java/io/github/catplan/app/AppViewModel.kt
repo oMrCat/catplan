@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.catplan.app.data.local.CareTaskEntity
 import io.github.catplan.app.data.local.CatEntity
 import io.github.catplan.app.data.local.CatPlanDatabase
+import io.github.catplan.app.data.local.ExpenseEntity
 import io.github.catplan.app.data.local.WeightEntryEntity
 import io.github.catplan.app.domain.CareScheduleGenerator
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +26,15 @@ data class CareTaskWithCat(
     val dueDate: LocalDate get() = LocalDate.ofEpochDay(task.dueDateEpochDay)
 }
 
+/** UI 层展示用的花费 + 猫咪组合（catName 为「全家」表示公摊） */
+data class ExpenseWithCat(
+    val expense: ExpenseEntity,
+    val catName: String,
+    val emoji: String,
+) {
+    val date: LocalDate get() = LocalDate.ofEpochDay(expense.dateEpochDay)
+}
+
 /**
  * 全应用共享的状态源：观察数据库、写入猫咪/体重/任务。
  * v0.1 规模下直接持有 DAO；后续模块化时再拆 Repository。
@@ -35,6 +45,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val catDao = db.catDao()
     private val taskDao = db.careTaskDao()
     private val weightDao = db.weightDao()
+    private val expenseDao = db.expenseDao()
     private val today: LocalDate = LocalDate.now()
 
     val cats: StateFlow<List<CatEntity>> = catDao.observeAll()
@@ -61,6 +72,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 .mapValues { (_, list) -> list.maxBy { it.dateEpochDay }.weightGrams }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /** 花费记录（新→旧），供账本页统计与列表 */
+    val expenses: StateFlow<List<ExpenseWithCat>> = combine(
+        expenseDao.observeAll(),
+        cats,
+    ) { list, cats ->
+        val byId = cats.associateBy { it.id }
+        list.map { e ->
+            val c = e.catId?.let { byId[it] }
+            ExpenseWithCat(e, c?.name ?: "全家", c?.avatarEmoji ?: "🏠")
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** 添加猫咪并按生日自动生成一年的护理计划 */
     fun addCat(
@@ -103,6 +126,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             weightDao.insert(
                 WeightEntryEntity(catId = catId, dateEpochDay = today.toEpochDay(), weightGrams = grams),
+            )
+        }
+    }
+
+    /** 记一笔花费；catId 为 null 表示全家公摊 */
+    fun addExpense(catId: Long?, amountCents: Long, category: String, note: String?) {
+        viewModelScope.launch {
+            expenseDao.insert(
+                ExpenseEntity(
+                    catId = catId,
+                    amountCents = amountCents,
+                    category = category,
+                    note = note,
+                    dateEpochDay = today.toEpochDay(),
+                ),
             )
         }
     }

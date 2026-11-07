@@ -41,6 +41,18 @@ interface WeightDao {
 }
 
 @Dao
+interface ExpenseDao {
+    @Query("SELECT * FROM expenses ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
+    fun observeAll(): Flow<List<ExpenseEntity>>
+
+    @Insert
+    suspend fun insert(expense: ExpenseEntity): Long
+
+    @Delete
+    suspend fun delete(expense: ExpenseEntity)
+}
+
+@Dao
 interface CareTaskDao {
     /** 未来 [untilEpochDay]（含）之前仍待办的任务，供今日页与提醒使用 */
     @Query("SELECT * FROM care_tasks WHERE status = 'pending' AND dueDateEpochDay <= :untilEpochDay ORDER BY dueDateEpochDay")

@@ -44,4 +44,10 @@ class NavigationUiTest {
         composeRule.onNodeWithText("记用药").assertIsDisplayed()
         composeRule.onNodeWithText("拍日记").assertIsDisplayed()
     }
+
+    @Test
+    fun ledgerTab_showsSummary() {
+        composeRule.onNodeWithText("账本").performClick()
+        composeRule.onNodeWithText("本月总支出").assertIsDisplayed()
+    }
 }

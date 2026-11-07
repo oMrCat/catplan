@@ -44,6 +44,42 @@ data class WeightEntryEntity(
     val note: String? = null,
 )
 
+/** 花费记录：catId 为空表示全家公摊 */
+@Entity(
+    tableName = "expenses",
+    foreignKeys = [
+        ForeignKey(
+            entity = CatEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["catId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("catId"), Index("dateEpochDay")],
+)
+data class ExpenseEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** 关联的猫咪；null = 全家公摊 */
+    val catId: Long?,
+    /** 金额，单位：分（整数避免浮点误差） */
+    val amountCents: Long,
+    /** 类目：主食 / 医疗 / 玩具 / 用品 / 其他 */
+    val category: String,
+    val note: String? = null,
+    /** 花费日期，epochDay */
+    val dateEpochDay: Long,
+    val createdAtEpochMs: Long = System.currentTimeMillis(),
+) {
+    companion object {
+        const val CATEGORY_FOOD = "主食"
+        const val CATEGORY_MEDICAL = "医疗"
+        const val CATEGORY_TOY = "玩具"
+        const val CATEGORY_SUPPLIES = "用品"
+        const val CATEGORY_OTHER = "其他"
+        val CATEGORIES = listOf(CATEGORY_FOOD, CATEGORY_MEDICAL, CATEGORY_TOY, CATEGORY_SUPPLIES, CATEGORY_OTHER)
+    }
+}
+
 /** 护理任务：疫苗 / 驱虫 / 体检，由 CareScheduleGenerator 生成 */
 @Entity(
     tableName = "care_tasks",
