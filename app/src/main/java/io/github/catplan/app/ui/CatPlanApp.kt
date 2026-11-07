@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -22,14 +23,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import io.github.catplan.app.R
 import io.github.catplan.app.ui.screens.CalendarScreen
+import io.github.catplan.app.ui.screens.CatDetailScreen
 import io.github.catplan.app.ui.screens.CatsScreen
 import io.github.catplan.app.ui.screens.LedgerScreen
+import io.github.catplan.app.ui.screens.SettingsScreen
 import io.github.catplan.app.ui.screens.TodayScreen
 
 private data class TabItem(val route: String, val labelRes: Int, val icon: ImageVector)
@@ -39,6 +44,7 @@ private val TABS = listOf(
     TabItem(route = "calendar", labelRes = R.string.tab_calendar, icon = Icons.Filled.CalendarMonth),
     TabItem(route = "cats", labelRes = R.string.tab_cats, icon = Icons.Filled.Pets),
     TabItem(route = "ledger", labelRes = R.string.tab_ledger, icon = Icons.Filled.AccountBalanceWallet),
+    TabItem(route = "settings", labelRes = R.string.tab_settings, icon = Icons.Filled.Settings),
 )
 
 /**
@@ -66,8 +72,17 @@ fun CatPlanApp(widthSizeClass: WindowWidthSizeClass) {
         NavHost(navController = navController, startDestination = "today", modifier = modifier) {
             composable("today") { TodayScreen() }
             composable("calendar") { CalendarScreen() }
-            composable("cats") { CatsScreen() }
+            composable("cats") {
+                CatsScreen(onOpenCat = { id -> navController.navigate("cat/$id") })
+            }
             composable("ledger") { LedgerScreen() }
+            composable("settings") { SettingsScreen() }
+            composable(
+                route = "cat/{catId}",
+                arguments = listOf(navArgument("catId") { type = NavType.LongType }),
+            ) { entry ->
+                CatDetailScreen(catId = entry.arguments?.getLong("catId") ?: 0L)
+            }
         }
     }
 

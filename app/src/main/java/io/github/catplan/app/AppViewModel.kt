@@ -1,20 +1,31 @@
 package io.github.catplan.app
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.catplan.app.data.BackupCodec
+import io.github.catplan.app.data.PhotoStore
+import io.github.catplan.app.data.WebDavClient
 import io.github.catplan.app.data.local.CareTaskEntity
 import io.github.catplan.app.data.local.CatEntity
 import io.github.catplan.app.data.local.CatPlanDatabase
 import io.github.catplan.app.data.local.ExpenseEntity
+import io.github.catplan.app.data.local.PhotoEntity
 import io.github.catplan.app.data.local.WeightEntryEntity
 import io.github.catplan.app.domain.CareScheduleGenerator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 /** UI 层展示用的任务 + 猫咪组合 */
@@ -46,7 +57,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val taskDao = db.careTaskDao()
     private val weightDao = db.weightDao()
     private val expenseDao = db.expenseDao()
+    private val photoDao = db.photoDao()
     private val today: LocalDate = LocalDate.now()
+
+    // —— WebDAV 配置（保存在本机 SharedPreferences）——
+
+    private val webDavPrefs = getApplication<Application>().getSharedPreferences("webdav", Context.MODE_PRIVATE)
+
+    var webDavUrl by mutableStateOf(webDavPrefs.getString("url", "") ?: "")
+    var webDavUsername by mutableStateOf(webDavPrefs.getString("username", "") ?: "")
+    var webDavPassword by mutableStateOf(webDavPrefs.getString("password", "") ?: "")
 
     val cats: StateFlow<List<CatEntity>> = catDao.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -142,6 +162,147 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     dateEpochDay = today.toEpochDay(),
                 ),
             )
+        }
+    }
+
+    // —— 成长相册 ——
+
+    fun observePhotos(catId: Long) = photoDao.observeForCat(catId)
+
+    fun observeWeights(catId: Long) = weightDao.observeForCat(catId)
+
+    fun addPhoto(context: Context, catId: Long, uri: Uri, onDone: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val path = withContext(Dispatchers.IO) { PhotoStore.copyToAlbum(context, uri, catId) }
+            if (path == null) {
+                onDone(false)
+            } else {
+                photoDao.insert(
+                    PhotoEntity(catId = catId, filePath = path, dateEpochDay = today.toEpochDay()),
+                )
+                onDone(true)
+            }
+        }
+    }
+
+    fun deletePhoto(photo: PhotoEntity) {
+        viewModelScope.launch {
+            PhotoStore.delete(photo.filePath)
+            photoDao.delete(photo)
+        }
+    }
+
+    // —— 备份 / 恢复（JSON）——
+
+    private suspend fun collectBackup(): BackupCodec.BackupData = withContext(Dispatchers.IO) {
+        BackupCodec.BackupData(
+            cats = catDao.getAll(),
+            weights = weightDao.getAll(),
+            careTasks = taskDao.getAll(),
+            expenses = expenseDao.getAll(),
+        )
+    }
+
+    /** 按「名字 + 生日」合并猫咪，其余记录追加；返回摘要文本 */
+    private suspend fun applyRestore(json: String): String = withContext(Dispatchers.IO) {
+        val data = BackupCodec.decode(json)
+        val existing = catDao.getAll()
+        val idMap = mutableMapOf<Long, Long>()
+        var addedCats = 0
+        data.cats.forEach { c ->
+            val match = existing.find { it.name == c.name && it.birthdayEpochDay == c.birthdayEpochDay }
+            val newId = match?.id ?: catDao.insert(c.copy(id = 0))
+            if (match == null) addedCats++
+            idMap[c.id] = newId
+        }
+        data.weights.forEach { w ->
+            val mapped = idMap[w.catId] ?: return@forEach
+            weightDao.insert(w.copy(id = 0, catId = mapped))
+        }
+        var addedTasks = 0
+        data.careTasks.forEach { t ->
+            val mapped = idMap[t.catId] ?: return@forEach
+            taskDao.insert(t.copy(id = 0, catId = mapped))
+            addedTasks++
+        }
+        var addedExpenses = 0
+        data.expenses.forEach { e ->
+            val mapped = if (e.catId == null) null else idMap[e.catId] ?: return@forEach
+            expenseDao.insert(e.copy(id = 0, catId = mapped))
+            addedExpenses++
+        }
+        "已恢复 $addedCats 只新猫、${data.weights.size} 条体重、$addedTasks 项任务、$addedExpenses 笔花费"
+    }
+
+    fun exportTo(context: Context, uri: Uri, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            runCatching {
+                val data = collectBackup()
+                val json = BackupCodec.encode(data)
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use {
+                        it.write(json.toByteArray(Charsets.UTF_8))
+                    } ?: error("无法写入所选位置")
+                }
+                "已导出 ${data.cats.size} 只猫、${data.weights.size} 条体重、${data.careTasks.size} 项任务、${data.expenses.size} 笔花费"
+            }.onSuccess(onDone).onFailure { onDone("导出失败：${it.message}") }
+        }
+    }
+
+    fun restoreFrom(context: Context, uri: Uri, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            runCatching {
+                val json = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                        ?: error("无法读取所选文件")
+                }
+                applyRestore(json)
+            }.onSuccess(onDone).onFailure { onDone("恢复失败：${it.message}") }
+        }
+    }
+
+    // —— WebDAV 同步（家庭共享基础版）——
+
+    fun saveWebDavConfig() {
+        webDavPrefs.edit()
+            .putString("url", webDavUrl.trim())
+            .putString("username", webDavUsername.trim())
+            .putString("password", webDavPassword)
+            .apply()
+    }
+
+    fun uploadToWebDav(onResult: (String) -> Unit) {
+        val url = webDavUrl.trim()
+        if (url.isBlank()) {
+            onResult("请先填写 WebDAV 文件地址")
+            return
+        }
+        saveWebDavConfig()
+        viewModelScope.launch {
+            runCatching {
+                val json = BackupCodec.encode(collectBackup())
+                withContext(Dispatchers.IO) {
+                    WebDavClient.upload(url, webDavUsername.trim(), webDavPassword, json).getOrThrow()
+                }
+                "已上传备份 ✅"
+            }.onSuccess(onResult).onFailure { onResult("上传失败：${it.message}") }
+        }
+    }
+
+    fun restoreFromWebDav(onResult: (String) -> Unit) {
+        val url = webDavUrl.trim()
+        if (url.isBlank()) {
+            onResult("请先填写 WebDAV 文件地址")
+            return
+        }
+        saveWebDavConfig()
+        viewModelScope.launch {
+            runCatching {
+                val json = withContext(Dispatchers.IO) {
+                    WebDavClient.download(url, webDavUsername.trim(), webDavPassword).getOrThrow()
+                }
+                applyRestore(json)
+            }.onSuccess(onResult).onFailure { onResult("下载/恢复失败：${it.message}") }
         }
     }
 

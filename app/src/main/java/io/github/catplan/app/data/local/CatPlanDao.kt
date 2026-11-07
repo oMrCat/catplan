@@ -12,6 +12,9 @@ interface CatDao {
     @Query("SELECT * FROM cats ORDER BY createdAtEpochMs")
     fun observeAll(): Flow<List<CatEntity>>
 
+    @Query("SELECT * FROM cats ORDER BY createdAtEpochMs")
+    suspend fun getAll(): List<CatEntity>
+
     @Query("SELECT * FROM cats WHERE id = :id")
     suspend fun getById(id: Long): CatEntity?
 
@@ -33,6 +36,9 @@ interface WeightDao {
     @Query("SELECT * FROM weight_entries ORDER BY dateEpochDay")
     fun observeAll(): Flow<List<WeightEntryEntity>>
 
+    @Query("SELECT * FROM weight_entries ORDER BY dateEpochDay")
+    suspend fun getAll(): List<WeightEntryEntity>
+
     @Insert
     suspend fun insert(entry: WeightEntryEntity): Long
 
@@ -41,9 +47,24 @@ interface WeightDao {
 }
 
 @Dao
+interface PhotoDao {
+    @Query("SELECT * FROM photos WHERE catId = :catId ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
+    fun observeForCat(catId: Long): Flow<List<PhotoEntity>>
+
+    @Insert
+    suspend fun insert(photo: PhotoEntity): Long
+
+    @Delete
+    suspend fun delete(photo: PhotoEntity)
+}
+
+@Dao
 interface ExpenseDao {
     @Query("SELECT * FROM expenses ORDER BY dateEpochDay DESC, createdAtEpochMs DESC")
     fun observeAll(): Flow<List<ExpenseEntity>>
+
+    @Query("SELECT * FROM expenses ORDER BY dateEpochDay")
+    suspend fun getAll(): List<ExpenseEntity>
 
     @Insert
     suspend fun insert(expense: ExpenseEntity): Long
@@ -73,4 +94,7 @@ interface CareTaskDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM care_tasks WHERE catId = :catId)")
     suspend fun hasTasksFor(catId: Long): Boolean
+
+    @Query("SELECT * FROM care_tasks ORDER BY dueDateEpochDay")
+    suspend fun getAll(): List<CareTaskEntity>
 }

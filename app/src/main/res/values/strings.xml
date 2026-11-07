@@ -6,6 +6,7 @@
     <string name="tab_calendar">日历</string>
     <string name="tab_cats">档案</string>
     <string name="tab_ledger">账本</string>
+    <string name="tab_settings">设置</string>
 
     <string name="channel_care_name">护理提醒</string>
     <string name="channel_care_desc">疫苗、驱虫、体检的到期提醒</string>

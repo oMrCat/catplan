@@ -44,6 +44,29 @@ data class WeightEntryEntity(
     val note: String? = null,
 )
 
+/** 成长相册：每张照片存为应用私有文件，DB 记录路径 */
+@Entity(
+    tableName = "photos",
+    foreignKeys = [
+        ForeignKey(
+            entity = CatEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["catId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("catId")],
+)
+data class PhotoEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val catId: Long,
+    /** 应用私有目录内的绝对路径 */
+    val filePath: String,
+    val note: String? = null,
+    val dateEpochDay: Long,
+    val createdAtEpochMs: Long = System.currentTimeMillis(),
+)
+
 /** 花费记录：catId 为空表示全家公摊 */
 @Entity(
     tableName = "expenses",

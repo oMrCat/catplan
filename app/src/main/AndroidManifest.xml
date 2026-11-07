@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 本应用不申请网络权限：所有数据只在本地，提醒也全部由 WorkManager 本地调度 -->
-
+    <!-- 提醒通知（本地 WorkManager 调度） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 唯一的联网用途：用户在「设置」里主动触发的 WebDAV 同步；其余数据全部保存在本机 -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".CatPlanApplication"

@@ -50,4 +50,10 @@ class NavigationUiTest {
         composeRule.onNodeWithText("账本").performClick()
         composeRule.onNodeWithText("本月总支出").assertIsDisplayed()
     }
+
+    @Test
+    fun settingsTab_showsBackupSection() {
+        composeRule.onNodeWithText("设置").performClick()
+        composeRule.onNodeWithText("备份与恢复").assertIsDisplayed()
+    }
 }

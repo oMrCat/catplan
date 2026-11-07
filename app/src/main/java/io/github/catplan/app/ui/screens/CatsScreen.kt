@@ -1,6 +1,7 @@
 package io.github.catplan.app.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -45,7 +46,7 @@ import java.time.LocalDate
  * 保存时会调用 CareScheduleGenerator 自动生成护理计划。
  */
 @Composable
-fun CatsScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
+fun CatsScreen(vm: AppViewModel = viewModel(), onOpenCat: (Long) -> Unit = {}, modifier: Modifier = Modifier) {
     val cats by vm.cats.collectAsStateWithLifecycle()
     val weights by vm.latestWeights.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -69,7 +70,11 @@ fun CatsScreen(vm: AppViewModel = viewModel(), modifier: Modifier = Modifier) {
         }
 
         cats.forEach { cat ->
-            ElevatedCard(Modifier.fillMaxWidth()) {
+            ElevatedCard(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenCat(cat.id) },
+            ) {
                 Row(
                     Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
