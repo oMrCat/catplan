@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
@@ -100,6 +101,7 @@ fun CatPlanApp(widthSizeClass: WindowWidthSizeClass, initialTab: String = "today
                             onClick = { onTabClick(tab) },
                             icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
                             label = { Text(stringResource(tab.labelRes)) },
+                            modifier = Modifier.testTag("tab_" + tab.route),
                         )
                     }
                 }
@@ -117,6 +119,7 @@ fun CatPlanApp(widthSizeClass: WindowWidthSizeClass, initialTab: String = "today
                             onClick = { onTabClick(tab) },
                             icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
                             label = { Text(stringResource(tab.labelRes)) },
+                            modifier = Modifier.testTag("tab_" + tab.route),
                         )
                     }
                 }
