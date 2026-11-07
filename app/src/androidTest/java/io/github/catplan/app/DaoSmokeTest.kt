@@ -7,6 +7,7 @@ import io.github.catplan.app.data.local.CareTaskEntity
 import io.github.catplan.app.data.local.CatEntity
 import io.github.catplan.app.data.local.CatPlanDatabase
 import io.github.catplan.app.data.local.ExpenseEntity
+import io.github.catplan.app.domain.Expense
 import io.github.catplan.app.domain.LedgerMath
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -64,7 +65,7 @@ class DaoSmokeTest {
         // 花费聚合（100+200+300=600 分）
         val summary = LedgerMath.summarize(
             db.expenseDao().getAll().map {
-                LedgerMath.Expense(it.amountCents, it.category, it.dateEpochDay) to (it.catId?.toString() ?: "全家")
+                Expense(it.amountCents, it.category, it.dateEpochDay) to (it.catId?.toString() ?: "全家")
             },
             2026, 11,
         )

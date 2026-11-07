@@ -9,6 +9,7 @@ import androidx.work.testing.TestListenableWorkerBuilder
 import io.github.catplan.app.data.local.CareTaskEntity
 import io.github.catplan.app.data.local.CatEntity
 import io.github.catplan.app.data.local.CatPlanDatabase
+import io.github.catplan.app.worker.ReminderWorker
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -30,45 +31,52 @@ class ReminderWorkerTest {
     val permissionRule: GrantPermissionRule =
         GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS)
 
-    private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
+    private lateinit var context: Context
     private lateinit var db: CatPlanDatabase
     private var insertedCatId: Long = 0
 
     @Before
-    fun setup() = runBlocking {
-        NotificationManagerCompatHolder.from(context).cancelAll()
-        db = CatPlanDatabase.get(context)
-        insertedCatId = db.catDao().insert(
-            CatEntity(name = "Worker测试猫", birthdayEpochDay = 19000),
-        )
-        db.careTaskDao().insert(
-            CareTaskEntity(
-                catId = insertedCatId,
-                type = CareTaskEntity.TYPE_RABIES,
-                title = "狂犬疫苗 · 年度",
-                dueDateEpochDay = LocalDate.now().plusDays(1).toEpochDay(),
-                intervalDays = 365,
-            ),
-        )
+    fun setup() {
+        context = InstrumentationRegistry.getInstrumentation().targetContext
+        runBlocking {
+            NotificationManagerCompatHolder.from(context).cancelAll()
+            db = CatPlanDatabase.get(context)
+            insertedCatId = db.catDao().insert(
+                CatEntity(name = "Worker测试猫", birthdayEpochDay = 19000),
+            )
+            db.careTaskDao().insert(
+                CareTaskEntity(
+                    catId = insertedCatId,
+                    type = CareTaskEntity.TYPE_RABIES,
+                    title = "狂犬疫苗 · 年度",
+                    dueDateEpochDay = LocalDate.now().plusDays(1).toEpochDay(),
+                    intervalDays = 365,
+                ),
+            )
+        }
     }
 
     @After
-    fun tearDown() = runBlocking {
-        NotificationManagerCompatHolder.from(context).cancelAll()
-        db.catDao().getById(insertedCatId)?.let { db.catDao().delete(it) }
+    fun tearDown() {
+        runBlocking {
+            NotificationManagerCompatHolder.from(context).cancelAll()
+            db.catDao().getById(insertedCatId)?.let { db.catDao().delete(it) }
+        }
     }
 
     @Test
-    fun workerPostsNotificationForDueTask() = runBlocking {
-        val worker = TestListenableWorkerBuilder<ReminderWorker>(context).build()
-        val result = worker.doWork()
+    fun workerPostsNotificationForDueTask() {
+        runBlocking {
+            val worker = TestListenableWorkerBuilder.from(context, ReminderWorker::class.java).build()
+            val result = worker.doWork()
 
-        assertEquals(ListenableWorker.Result.success(), result)
-        val active = NotificationManagerCompatHolder.from(context).activeNotifications
-        assertTrue(
-            "应存在护理提醒渠道的活跃通知",
-            active.any { it.notification.channelId == CatPlanApplication.CHANNEL_ID_CARE },
-        )
+            assertEquals(ListenableWorker.Result.success(), result)
+            val active = NotificationManagerCompatHolder.from(context).activeNotifications
+            assertTrue(
+                "应存在护理提醒渠道的活跃通知",
+                active.any { it.notification.channelId == CatPlanApplication.CHANNEL_ID_CARE },
+            )
+        }
     }
 }
 
