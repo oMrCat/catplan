@@ -7,3 +7,7 @@ build/
 /captures
 .externalNativeBuild/
 .cxx/
+
+# 发布签名（永不入库）
+secrets/
+keystore.properties

@@ -5,6 +5,15 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+// 发布签名：本地从 secrets/keystore.properties 读取；CI 由 release 工作流生成同名文件（来自 GitHub Secrets）
+val releaseKeystore = Properties().apply {
+    val f = rootProject.file("secrets/keystore.properties")
+    if (f.exists()) FileInputStream(f).use { load(it) }
+}
+
 android {
     namespace = "io.github.omrcat.catplan"
     compileSdk = 35
@@ -13,10 +22,21 @@ android {
         applicationId = "io.github.omrcat.catplan"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.3.0-alpha01"
+        versionCode = 7
+        versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // 开源发布前可改成你自己的反写域名，例如 io.github.<你的GitHub用户名>.catplan
+    }
+
+    signingConfigs {
+        println("CatPlan release signing diagnostics: props.size=${releaseKeystore.size}, fileExists=${rootProject.file("keystore.properties").exists()}")
+        if (releaseKeystore.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(releaseKeystore["storeFile"] as String)
+                storePassword = releaseKeystore["storePassword"] as String
+                keyAlias = releaseKeystore["keyAlias"] as String
+                keyPassword = releaseKeystore["keyPassword"] as String
+            }
+        }
     }
 
     buildTypes {
@@ -26,6 +46,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // 无 keystore.properties 时退回 debug 签名，保证任何人 clone 后可构建
+            signingConfig = if (releaseKeystore.isNotEmpty()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
     compileOptions {
